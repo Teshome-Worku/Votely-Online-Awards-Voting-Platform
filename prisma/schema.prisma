@@ -27,6 +27,11 @@ enum EventStatus {
   ARCHIVED
 }
 
+enum VotingRule {
+  ONE_VOTE_PER_CATEGORY
+  ONE_VOTE_PER_EVENT
+}
+
 model User {
   id           String        @id @default(cuid())
   name         String
@@ -73,11 +78,14 @@ model Event {
   votingStartsAt DateTime
   votingEndsAt   DateTime
   status         EventStatus @default(DRAFT)
+  votingRule     VotingRule  @default(ONE_VOTE_PER_CATEGORY)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  categories Category[]
-  nominees   Nominee[]
+  categories    Category[]
+  nominees      Nominee[]
+  votes         Vote[]
+  otpChallenges OtpChallenge[]
 
   @@index([organizerId])
   @@index([status])
@@ -95,6 +103,7 @@ model Category {
   updatedAt    DateTime  @updatedAt
 
   nominees Nominee[]
+  votes    Vote[]
 
   @@unique([eventId, name])
   @@index([eventId])
@@ -114,8 +123,56 @@ model Nominee {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  votes Vote[]
+
   @@unique([categoryId, name])
   @@index([categoryId])
   @@index([eventId])
   @@map("nominees")
+}
+
+model OtpChallenge {
+  id          String    @id @default(cuid())
+  eventId     String
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  phoneNumber String
+  otpHash     String
+  expiresAt   DateTime
+  attempts    Int       @default(0)
+  verifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([eventId, phoneNumber])
+  @@map("otp_challenges")
+}
+
+model VoterSession {
+  id          String   @id @default(cuid())
+  token       String   @unique
+  eventId     String
+  phoneNumber String
+  phoneHash   String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([token])
+  @@index([eventId, phoneHash])
+  @@map("voter_sessions")
+}
+
+model Vote {
+  id             String   @id @default(cuid())
+  eventId        String
+  event          Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  categoryId     String
+  category       Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  nomineeId      String
+  nominee        Nominee  @relation(fields: [nomineeId], references: [id], onDelete: Cascade)
+  voterPhoneHash String
+  createdAt      DateTime @default(now())
+
+  @@unique([eventId, categoryId, voterPhoneHash])
+  @@index([eventId, voterPhoneHash])
+  @@index([nomineeId])
+  @@map("votes")
 }
