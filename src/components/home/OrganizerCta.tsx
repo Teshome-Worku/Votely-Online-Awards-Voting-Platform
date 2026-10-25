@@ -25,7 +25,7 @@ export function OrganizerCta() {
             </p>
 
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/auth/register" className="w-full sm:w-auto">
+              <Link href="/register" className="w-full sm:w-auto">
                 <Button
                   variant="primaryGlow"
                   size="lg"

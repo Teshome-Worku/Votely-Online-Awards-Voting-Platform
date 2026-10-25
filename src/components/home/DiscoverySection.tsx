@@ -103,7 +103,7 @@ export function DiscoverySection() {
             </div>
 
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/auth/register">
+              <Link href="/register">
                 <Button variant="primaryGlow" size="sm">
                   Be the first to create an awards event
                 </Button>

@@ -60,12 +60,12 @@ export function Navbar() {
 
         {/* Desktop CTA actions */}
         <div className="hidden lg:flex items-center gap-4">
-          <Link href="/auth/login">
+          <Link href="/login">
             <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white text-sm">
               Organizer Login
             </Button>
           </Link>
-          <Link href="/auth/register">
+          <Link href="/register">
             <Button variant="primaryGlow" size="sm" className="flex items-center gap-2">
               <span>Create an awards event for free</span>
               <ArrowRight className="h-4 w-4" />
@@ -75,7 +75,7 @@ export function Navbar() {
 
         {/* Mobile menu trigger */}
         <div className="flex items-center gap-2 md:hidden">
-          <Link href="/auth/register" className="sm:hidden">
+          <Link href="/register" className="sm:hidden">
             <Button variant="primaryGlow" size="sm" className="text-xs px-2.5 h-8">
               Create Event
             </Button>
@@ -114,12 +114,12 @@ export function Navbar() {
               );
             })}
             <div className="pt-4 border-t border-slate-800 flex flex-col gap-2">
-              <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="secondary" className="w-full justify-center">
                   Organizer Login
                 </Button>
               </Link>
-              <Link href="/auth/register" onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="primaryGlow" className="w-full justify-center flex items-center gap-2">
                   <span>Create an awards event for free</span>
                   <ArrowRight className="h-4 w-4" />

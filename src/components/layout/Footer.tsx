@@ -44,12 +44,12 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/auth/register" className="hover:text-violet-300 transition-colors">
+                <Link href="/register" className="hover:text-violet-300 transition-colors">
                   Create an Event
                 </Link>
               </li>
               <li>
-                <Link href="/auth/login" className="hover:text-violet-300 transition-colors">
+                <Link href="/login" className="hover:text-violet-300 transition-colors">
                   Organizer Dashboard
                 </Link>
               </li>
