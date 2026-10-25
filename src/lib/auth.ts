@@ -123,10 +123,23 @@ export async function invalidateAllUserSessions(userId: string): Promise<void> {
   await prisma.session.deleteMany({ where: { userId } });
 }
 
+let testUserOverride: SafeUser | null = null;
+
+/**
+ * Sets an in-memory authenticated user for integration testing.
+ */
+export function setTestUser(user: SafeUser | null) {
+  testUserOverride = user;
+}
+
 /**
  * Retrieves the currently authenticated user in Next.js Server Components / Actions.
  */
 export async function getCurrentUser(): Promise<SafeUser | null> {
+  if (testUserOverride) {
+    return testUserOverride;
+  }
+
   try {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);

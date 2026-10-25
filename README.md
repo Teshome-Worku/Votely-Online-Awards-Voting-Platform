@@ -130,7 +130,56 @@ $env:DATABASE_URL=$null
 
 ---
 
-## 6. Running Tests & Verification
+## 6. Results, Standings & Winner Finalization (Phase 6)
+
+### Result Calculation Engine
+- **Persisted Vote Aggregation:** Computations are calculated strictly from accepted, confirmed votes stored in PostgreSQL (`Vote` table). Incomplete or rejected attempts are never counted.
+- **Participation Metrics:**
+  - Event-level total accepted votes.
+  - Distinct verified phone voters participating (counted from unique HMAC phone hashes).
+  - Category-level vote counts and percentages.
+- **Competition Ranking System:** Nominees are ranked according to standard competition ranking (1224 ranking), with highest vote counts receiving Rank #1.
+- **Empty Category Protection:** Categories with zero votes record 0% without division-by-zero errors and are formally designated as `NO_VOTES_CAST` with zero winners declared.
+
+### Documented Tie-Handling Policy
+- **Co-Winners Transparency:** When two or more leading nominees in a category share the top vote total (> 0 votes), both are assigned Rank #1.
+- **Explicit Tie Flag:** The category is explicitly flagged with `isTie: true` and status `CO_WINNERS`.
+- **Zero Arbitrary Selection:** The platform strictly forbids silent or randomized tie-breaks; joint winners are documented transparently on the certified ballot record and public results.
+- **Subsequent Ranking Skips:** In accordance with standard competition ranking, the subsequent competitor receives rank `1 + N_tied` (e.g. 1st, 1st, 3rd).
+
+### Finalization Preconditions & Workflow
+- **Preconditions:**
+  1. The event status must strictly be `CLOSED`. Attempting to finalize `LIVE`, `SCHEDULED`, or `DRAFT` events is rejected by server guards.
+  2. The acting user must be the authenticated owner of the awards event.
+  3. Voting data must be consistent.
+- **Durable Snapshot Model (`FinalizedResultSnapshot`):**
+  - Finalization generates an immutable, versioned snapshot capturing total votes, verified voters, actor ID, timestamp, and a frozen JSON structure of all category outcomes and winner determinations.
+  - Subsequent mutations or recalculations cannot alter the certified historical snapshot.
+  - Any authorized correction generates an incremented snapshot version (v2, v3...) while preserving the preceding records intact.
+- **Atomic State Transition:** Updating the event status to `FINALIZED`, persisting the snapshot, and writing the audit entry occurs inside a single database transaction (`prisma.$transaction`).
+
+### Controlled Public Publication
+- **Separation of Concerns:** Finalization and publication are independent operations.
+- **Eligibility:** Only `FINALIZED` events can be published to the public domain.
+- **Public Results Route (`/events/[eventSlug]/results`):**
+  - When published: Displays certified category winners, co-winners, rankings, vote distributions, and official timestamp.
+  - When unpublished: Renders a friendly informational card explaining that results are pending release, without leaking vote tallies or leader standings.
+  - Unpublishing is supported: Organizers can toggle visibility off while retaining certified snapshot integrity.
+
+### Audit Infrastructure (`AuditLog`)
+- Durably captures actor (`userId`), `action`, timestamp, and metadata payload for:
+  - `RESULTS_FINALIZED`
+  - `RESULTS_PUBLISHED`
+  - `RESULTS_UNPUBLISHED`
+  - `RESULTS_CORRECTED`
+- Embedded in the organizer dashboard as a live, tamper-evident audit history timeline.
+
+### Voter Privacy Guarantee
+- Result queries and API endpoints strictly strip phone numbers, OTP challenges, and voter phone hashes. Public consumers receive only aggregated category rankings and nominee totals.
+
+---
+
+## 7. Running Tests & Verification
 
 ### Run Automated Test Suites
 ```bash
@@ -140,6 +189,7 @@ npx tsx tests/auth.test.ts
 npx tsx tests/events.test.ts
 npx tsx tests/categories-nominees.test.ts
 npx tsx tests/voting-otp.test.ts
+npx tsx tests/results-finalization.test.ts
 $env:DATABASE_URL=$null
 ```
 
@@ -147,7 +197,8 @@ $env:DATABASE_URL=$null
 - **Events Suite (`tests/events.test.ts`):** 34 assertions covering event persistence, slug generation, collisions, date ordering, and lifecycle transitions.
 - **Categories & Nominees Suite (`tests/categories-nominees.test.ts`):** 27 assertions covering category uniqueness, nominee uniqueness, cascading deletions, cross-event mismatch rejection, and lifecycle structural locks.
 - **Voting & Phone OTP Suite (`tests/voting-otp.test.ts`):** 42 assertions covering phone normalization, OTP generation, timing-safe verification, rate limiting, provider failures, session issuance, atomic duplicate vote prevention, voting rule enforcement, and lifecycle/schedule verification.
-- **Total:** 133 automated tests passing with 0 failures.
+- **Results & Finalization Suite (`tests/results-finalization.test.ts`):** 72 assertions covering results aggregation, standard competition ranking (1224), tie detection and co-winners assignment, empty category handling (zero votes), voter privacy (zero leaked phone hashes), finalization precondition enforcement (CLOSED required), multi-tenant authorization, atomic durable snapshots (v1), publication controls, unpublication, authorized corrections (v2), and tamper-evident audit logs.
+- **Total:** 205 automated tests passing with 0 failures.
 
 ### Run Lint and Build Checks
 ```bash
@@ -157,13 +208,13 @@ npm run build
 
 ---
 
-## 7. Project Status & Roadmap
+## 8. Project Status & Roadmap
 
 - **Phase 1: Public Website & Brand Foundation:** Complete.
 - **Phase 2: Authentication & Organizer Foundation:** Complete.
 - **Phase 3: Event Creation and Lifecycle Management:** Complete.
 - **Phase 4: Categories & Nominee Management:** Complete.
 - **Phase 5: Voting Rules, Phone OTP & Secure Vote Recording:** Complete.
-- **Phase 6: Results, Standings & Finalization:** Upcoming.
+- **Phase 6: Results, Standings & Winner Finalization:** Complete.
 - **Phase 7: Platform Administration & Audit Trail:** Upcoming.
 - **Phase 8: Production Readiness:** Upcoming.

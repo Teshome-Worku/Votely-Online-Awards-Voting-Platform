@@ -9,6 +9,7 @@ import {
   Clock,
   Edit3,
   ExternalLink,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -120,6 +121,13 @@ export default async function EventManagePage({ params }: Props) {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              <Link href={`/dashboard/events/${event.id}/results`}>
+                <Button variant="secondary" size="sm" className="flex items-center gap-1.5 text-xs text-amber-300 border-amber-800/40 hover:bg-amber-950/30">
+                  <Trophy className="h-3.5 w-3.5 text-amber-400" />
+                  <span>Standings & Results</span>
+                </Button>
+              </Link>
+
               <Link href={`/dashboard/events/${event.id}/edit`}>
                 <Button variant="outline" size="sm" className="flex items-center gap-1.5 text-xs">
                   <Edit3 className="h-3.5 w-3.5" />
