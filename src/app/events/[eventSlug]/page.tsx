@@ -4,7 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, ShieldCheck, ArrowLeft, AlertCircle, Clock, Layers } from "lucide-react";
+import { Calendar, ShieldCheck, ArrowLeft, AlertCircle, Clock, Layers, Trophy } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { PublicEventVoting } from "@/components/events/PublicEventVoting";
@@ -179,6 +179,29 @@ export default async function PublicEventPage({ params }: PageProps) {
               </div>
             </div>
           </div>
+
+          {/* Published Results Banner */}
+          {dbEvent.resultsPublished && dbEvent.status === "FINALIZED" && (
+            <div className="rounded-3xl border border-amber-600/50 bg-gradient-to-r from-amber-950/40 via-violet-950/30 to-[#0c1226] p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+              <div className="flex items-center gap-3.5">
+                <div className="h-12 w-12 rounded-2xl bg-amber-500/20 text-amber-400 ring-1 ring-amber-400/30 flex items-center justify-center shrink-0">
+                  <Trophy className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-white">Official Results & Winners Certified</h3>
+                  <p className="text-xs text-slate-300">
+                    The competition has concluded and official certified outcomes are now available to view.
+                  </p>
+                </div>
+              </div>
+              <Link href={`/events/${dbEvent.slug}/results`}>
+                <Button variant="primaryGlow" size="sm" className="text-xs shrink-0 flex items-center gap-2">
+                  <Trophy className="h-3.5 w-3.5 text-amber-300" />
+                  <span>View Official Results</span>
+                </Button>
+              </Link>
+            </div>
+          )}
 
           {/* Real Categories & Nominees Section */}
           <div className="space-y-8">
