@@ -9,11 +9,11 @@ import {
   Clock,
   Edit3,
   ExternalLink,
-  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EventStatusActions } from "@/components/events/EventStatusActions";
+import { CategoryManager } from "@/components/events/CategoryManager";
 import type { EventStatus } from "@prisma/client";
 
 export const metadata = {
@@ -55,6 +55,16 @@ export default async function EventManagePage({ params }: Props) {
 
   const event = await prisma.event.findUnique({
     where: { id: eventId },
+    include: {
+      categories: {
+        include: {
+          nominees: {
+            orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
+          },
+        },
+        orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
+      },
+    },
   });
 
   // Strict ownership check: Must exist and belong to the logged-in organizer
@@ -204,17 +214,13 @@ export default async function EventManagePage({ params }: Props) {
             </div>
           </div>
 
-          {/* Phase 4 Boundary Notice: Categories & Nominees */}
-          <div className="rounded-3xl border border-dashed border-violet-500/30 bg-violet-950/20 p-8 text-center space-y-3">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-950/60 border border-violet-500/30 text-violet-400">
-              <Layers className="h-6 w-6" />
-            </div>
-            <h3 className="text-lg font-bold text-white">
-              Award Categories & Nominees (Phase 4)
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
-              Phase 3 establishes the event foundation, slugs, and lifecycle state machine. In Phase 4, you will be able to configure award categories, nominee bios, and headshots.
-            </p>
+          {/* Category and Nominee Management Section */}
+          <div className="rounded-3xl border border-slate-800 bg-[#0d1428] p-6 sm:p-8 shadow-xl">
+            <CategoryManager
+              eventId={event.id}
+              eventStatus={event.status}
+              categories={event.categories}
+            />
           </div>
         </div>
       </main>

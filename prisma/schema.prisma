@@ -76,7 +76,46 @@ model Event {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
+  categories Category[]
+  nominees   Nominee[]
+
   @@index([organizerId])
   @@index([status])
   @@map("events")
+}
+
+model Category {
+  id           String    @id @default(cuid())
+  eventId      String
+  event        Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?   @db.Text
+  displayOrder Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  nominees Nominee[]
+
+  @@unique([eventId, name])
+  @@index([eventId])
+  @@map("categories")
+}
+
+model Nominee {
+  id           String    @id @default(cuid())
+  eventId      String
+  event        Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  categoryId   String
+  category     Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?   @db.Text
+  imageUrl     String?
+  displayOrder Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+  @@index([eventId])
+  @@map("nominees")
 }
