@@ -6,7 +6,7 @@ Votely is a specialized online platform allowing organizations and creators to h
 
 ## 1. Technology Stack
 
-- **Framework:** Next.js (App Router, Turbopack)
+- **Framework:** Next.js 16 (App Router, Turbopack)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS (Dark navy and violet design identity)
 - **Database & ORM:** PostgreSQL & Prisma ORM
@@ -78,52 +78,80 @@ npx tsx scripts/bootstrap-admin.ts
 
 ---
 
-## 5. Authentication & Access Control Architecture
+## 5. Event Creation & Lifecycle Architecture (Phase 3)
 
-### User Roles
-- **`ORGANIZER`**: Standard user role assigned automatically upon public registration. Organizers can access `/dashboard` to manage their awards events. Public registration inputs cannot elevate accounts to `PLATFORM_ADMIN`.
-- **`PLATFORM_ADMIN`**: Elevated system role provisioned exclusively via administrative bootstrapping or platform governance. Admins can access `/admin` for user oversight and platform management.
+### Data Model
+- **`Event` Table:**
+  - `id`: Immutable CUID primary key.
+  - `organizerId`: References `User.id` (strictly derived from authenticated session).
+  - `name`: Awards competition name (3–150 characters).
+  - `slug`: Unique URL slug with `@unique` index.
+  - `description`: Event description (minimum 10 characters).
+  - `bannerUrl` & `logoUrl`: Optional public image asset URLs (documents external URL linking; no arbitrary database blobs).
+  - `startDate` & `endDate`: Event date boundary.
+  - `votingStartsAt` & `votingEndsAt`: Voting window.
+  - `status`: Lifecycle enum defaulting to `DRAFT`.
+  - `createdAt` & `updatedAt`: Automatic timestamps.
 
-### Session Management
-- **Token Generation:** 256-bit cryptographically secure random token (`crypto.randomBytes(32)`).
-- **Session Storage:** Persisted in PostgreSQL `sessions` table with an expiration timestamp (default: 7 days) and user linkage.
-- **Cookies:** Stored in an `httpOnly`, `secure` (in production), `sameSite: "lax"`, `path: "/"` cookie named `votely_session`.
-- **Expiration & Cleanup:** Tokens older than the expiration timestamp or belonging to suspended accounts are automatically rejected and purged from the database.
-- **Revocation:** Logging out instantly deletes the session record from the database.
+### Slug Generation & Collision Handling
+- Slugs are generated from the event title using transliteration and URL-safe hyphenation (`/events/{slug}`).
+- Automatic collision resolution: If an event name produces an already registered slug, sequential suffixes (`-2`, `-3`) are assigned dynamically.
 
-### Rate Limiting
-- **Registration:** Sliding window limit (10 attempts per hour per IP).
-- **Login:** Sliding window limit (5 failed attempts per 15 minutes per IP/email pair). Counters reset upon successful authentication.
+### Schedule & Date Chronology Validation
+Server-side validation enforces logical date ordering:
+1. `startDate <= votingStartsAt` (voting cannot open before the event begins).
+2. `votingStartsAt < votingEndsAt` (voting must have a positive duration).
+3. `votingEndsAt <= endDate` (voting cannot end after the event concludes).
 
-### Route Protection
-- **Middleware (`src/middleware.ts`):** Edge-level route protection redirecting unauthenticated visitors to `/login?next=...`.
-- **Server Component Guards (`src/lib/guard.ts`):**
-  - `requireOrganizer()`: Verifies authenticated user session; redirects to `/login`.
-  - `requirePlatformAdmin()`: Verifies authenticated user session and enforces `role === "PLATFORM_ADMIN"`. Non-admin authenticated users are redirected to `/access-denied` (HTTP 403 equivalent).
+### Lifecycle State Machine
+```
+   ┌──────────┐
+   │  DRAFT   │
+   └────┬─────┘
+        │ 
+        ├──────────────────────┐
+        ▼                      ▼
+  ┌───────────┐          ┌──────────┐
+  │ SCHEDULED │ ◄──────► │   LIVE   │
+  └───────────┘          └────┬─────┘
+                              │
+                              ▼
+                         ┌──────────┐
+                         │  CLOSED  │ ◄─── (Reopen)
+                         └────┬─────┘
+                              │
+                              ▼
+                        ┌───────────┐
+                        │ FINALIZED │
+                        └─────┬─────┘
+                              │
+                              ▼
+                        ┌───────────┐
+                        │ ARCHIVED  │
+                        └───────────┘
+```
+- **Allowed Transitions:**
+  - `DRAFT` → `SCHEDULED` or `LIVE`
+  - `SCHEDULED` → `LIVE` or `DRAFT`
+  - `LIVE` → `CLOSED`
+  - `CLOSED` → `FINALIZED` or `LIVE` (reopen)
+  - `FINALIZED` → `ARCHIVED`
+- **Public Visibility Enforcement:**
+  - Events with status `LIVE`, `SCHEDULED`, `CLOSED`, or `FINALIZED` are discoverable by public visitors.
+  - `DRAFT` events return HTTP 404 to anonymous visitors and unauthorized users. The authenticated event organizer alone can view private Drafts via an "Owner Preview Mode" with a direct management link.
 
 ---
 
 ## 6. Running Tests & Verification
 
-### Run Automated Security Test Suite
+### Run Automated Security & Event Test Suites
 ```bash
 # In PowerShell:
 $env:DATABASE_URL="postgresql://username:password@localhost:5432/votely_test?schema=public"
 npx tsx tests/auth.test.ts
+npx tsx tests/events.test.ts
 $env:DATABASE_URL=$null
 ```
-
-The test suite covers:
-1. Successful organizer registration with normalized email and bcrypt password hash.
-2. Duplicate email rejection (case-insensitive).
-3. Field validation (name length, email syntax, password complexity).
-4. Successful login & session generation.
-5. Incorrect password rejection.
-6. Logout and session invalidation.
-7. Unauthenticated access detection.
-8. Strict role isolation (organizer forbidden from `/admin`).
-9. Privilege escalation prevention during registration.
-10. Session expiration purging and suspended account handling.
 
 ### Run Lint and Build Checks
 ```bash
@@ -137,8 +165,8 @@ npm run build
 
 - **Phase 1: Public Website & Brand Foundation:** Complete.
 - **Phase 2: Authentication & Organizer Foundation:** Complete.
-- **Phase 3: Event Creation and Lifecycle Management:** Next phase.
-- **Phase 4: Categories & Nominee Management:** Upcoming.
+- **Phase 3: Event Creation and Lifecycle Management:** Complete.
+- **Phase 4: Categories & Nominee Management:** Next phase.
 - **Phase 5: Voting Rules & SMS OTP Integration:** Upcoming.
 - **Phase 6: Results, Standings & Finalization:** Upcoming.
 - **Phase 7: Platform Administration & Audit Trail:** Upcoming.

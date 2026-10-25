@@ -1,16 +1,42 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { DiscoverySection } from "@/components/home/DiscoverySection";
+import { DiscoverySection, type PublicEventItem } from "@/components/home/DiscoverySection";
 import { Trophy, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { prisma } from "@/lib/prisma";
 
 export const metadata = {
   title: "Discover Awards | Votely",
   description: "Browse verified online awards competitions and vote for your favorite nominees.",
 };
 
-export default function EventsDiscoveryPage() {
+export const dynamic = "force-dynamic";
+
+export default async function EventsDiscoveryPage() {
+  const dbEvents = await prisma.event.findMany({
+    where: {
+      status: { in: ["LIVE", "SCHEDULED", "CLOSED", "FINALIZED"] },
+    },
+    include: {
+      organizer: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const publishedEvents: PublicEventItem[] = dbEvents.map((e) => ({
+    id: e.id,
+    name: e.name,
+    slug: e.slug,
+    description: e.description,
+    organizerName: e.organizer.organization || e.organizer.name,
+    status: e.status,
+    startDate: e.startDate.toISOString(),
+    endDate: e.endDate.toISOString(),
+    votingStartsAt: e.votingStartsAt.toISOString(),
+    votingEndsAt: e.votingEndsAt.toISOString(),
+  }));
+
   return (
     <div className="min-h-screen flex flex-col bg-[#070a14] text-slate-100">
       <Navbar />
@@ -33,7 +59,7 @@ export default function EventsDiscoveryPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <Link href="/auth/register">
+                <Link href="/register">
                   <Button variant="primaryGlow" size="sm">
                     Host an Award Event
                   </Button>
@@ -49,8 +75,8 @@ export default function EventsDiscoveryPage() {
           </div>
         </div>
 
-        {/* Discovery Interface */}
-        <DiscoverySection />
+        {/* Discovery Interface with real database events */}
+        <DiscoverySection publishedEvents={publishedEvents} />
       </main>
       <Footer />
     </div>

@@ -18,6 +18,15 @@ enum AccountStatus {
   PENDING
 }
 
+enum EventStatus {
+  DRAFT
+  SCHEDULED
+  LIVE
+  CLOSED
+  FINALIZED
+  ARCHIVED
+}
+
 model User {
   id           String        @id @default(cuid())
   name         String
@@ -31,6 +40,7 @@ model User {
   updatedAt    DateTime      @updatedAt
 
   sessions Session[]
+  events   Event[]
 
   @@map("users")
 }
@@ -47,4 +57,26 @@ model Session {
 
   @@index([userId])
   @@map("sessions")
+}
+
+model Event {
+  id             String      @id @default(cuid())
+  organizerId    String
+  organizer      User        @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  name           String
+  slug           String      @unique
+  description    String      @db.Text
+  bannerUrl      String?
+  logoUrl        String?
+  startDate      DateTime
+  endDate        DateTime
+  votingStartsAt DateTime
+  votingEndsAt   DateTime
+  status         EventStatus @default(DRAFT)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([organizerId])
+  @@index([status])
+  @@map("events")
 }

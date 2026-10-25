@@ -2,10 +2,23 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Trophy, Calendar, Users, Eye, Sparkles, Filter } from "lucide-react";
+import { Search, Trophy, Calendar, Eye, Sparkles, Clock, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+
+export interface PublicEventItem {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  organizerName: string;
+  status: "DRAFT" | "SCHEDULED" | "LIVE" | "CLOSED" | "FINALIZED" | "ARCHIVED";
+  startDate: string | Date;
+  endDate: string | Date;
+  votingStartsAt: string | Date;
+  votingEndsAt: string | Date;
+}
 
 // Prototype demonstration card (explicitly labeled as prototype mockup per PRS)
 const DEMO_EVENT = {
@@ -15,21 +28,57 @@ const DEMO_EVENT = {
   description:
     "Celebrating outstanding achievements across Ethiopian music, digital media, cinema, and cultural arts. Verified public voting powered by Votely OTP.",
   organizerName: "Addis Creative Guild",
-  status: "live" as const,
-  categoriesCount: 8,
-  nomineesCount: 32,
-  votingRule: "1 vote per category",
+  status: "LIVE" as const,
   votingEndsAt: "Nov 30, 2026",
   isDemonstration: true,
 };
 
-export function DiscoverySection() {
+function getPublicStatusBadge(status: string) {
+  switch (status) {
+    case "LIVE":
+      return (
+        <Badge variant="live" className="flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Live Voting</span>
+        </Badge>
+      );
+    case "SCHEDULED":
+      return <Badge variant="warning">Voting Opens Soon</Badge>;
+    case "CLOSED":
+      return <Badge variant="secondary">Voting Closed</Badge>;
+    case "FINALIZED":
+      return <Badge variant="glow">Finalized</Badge>;
+    default:
+      return <Badge variant="outline">{status}</Badge>;
+  }
+}
+
+export function DiscoverySection({
+  publishedEvents = [],
+}: {
+  publishedEvents?: PublicEventItem[];
+}) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedStatus, setSelectedStatus] = React.useState<string>("all");
   const [showDemoPreview, setShowDemoPreview] = React.useState(false);
 
-  // In Phase 1, there are no live database events connected yet.
-  const hasLiveEvents = false;
+  // Filter published events
+  const filteredEvents = publishedEvents.filter((event) => {
+    const matchesSearch =
+      event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.organizerName.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    if (selectedStatus === "all") return true;
+    if (selectedStatus === "live") return event.status === "LIVE";
+    if (selectedStatus === "upcoming") return event.status === "SCHEDULED";
+    if (selectedStatus === "finalized") return event.status === "FINALIZED" || event.status === "CLOSED";
+    return true;
+  });
+
+  const hasRealEvents = filteredEvents.length > 0;
 
   return (
     <section className="py-20 relative" id="discover">
@@ -49,7 +98,7 @@ export function DiscoverySection() {
             </p>
           </div>
 
-          {/* Search bar & filter */}
+          {/* Search bar */}
           <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -70,7 +119,7 @@ export function DiscoverySection() {
             { id: "all", label: "All Events" },
             { id: "live", label: "Live Voting" },
             { id: "upcoming", label: "Upcoming" },
-            { id: "finalized", label: "Results Published" },
+            { id: "finalized", label: "Results & Closed" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -86,8 +135,59 @@ export function DiscoverySection() {
           ))}
         </div>
 
-        {/* Conditional rendering: Real events vs Graceful Empty State */}
-        {!hasLiveEvents && !showDemoPreview ? (
+        {/* Real Events Grid */}
+        {hasRealEvents ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredEvents.map((event) => (
+              <div
+                key={event.id}
+                className="rounded-3xl border border-slate-800 bg-[#0d142b] p-6 flex flex-col justify-between hover:border-violet-500/40 transition-all shadow-xl group"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    {getPublicStatusBadge(event.status)}
+                    <span className="text-[11px] font-mono text-slate-400">
+                      /events/{event.slug}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-bold text-white group-hover:text-violet-300 transition-colors">
+                      {event.name}
+                    </h3>
+                    <p className="text-xs text-violet-300/80 mt-1 font-medium">
+                      Organized by: {event.organizerName}
+                    </p>
+                    <p className="text-sm text-slate-400 mt-2 line-clamp-3 leading-relaxed">
+                      {event.description}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-800/80 space-y-1.5 text-xs text-slate-400">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-violet-400" />
+                      <span>Event: {new Date(event.startDate).toLocaleDateString()} – {new Date(event.endDate).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-indigo-400" />
+                      <span>Voting: {new Date(event.votingStartsAt).toLocaleDateString()} – {new Date(event.votingEndsAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6 mt-4 border-t border-slate-800/80">
+                  <Link href={`/events/${event.slug}`} className="w-full">
+                    <Button variant="primaryGlow" size="sm" className="w-full justify-center text-xs flex items-center gap-2">
+                      <span>View Event Page</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : !showDemoPreview ? (
+          /* Graceful Empty State */
           <div className="rounded-2xl border border-dashed border-slate-800 bg-[#0a0e1e]/60 p-12 text-center max-w-2xl mx-auto space-y-4">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-950/50 border border-violet-500/20 text-violet-400">
               <Trophy className="h-7 w-7" />
@@ -97,15 +197,14 @@ export function DiscoverySection() {
                 No Public Awards Live at This Moment
               </h3>
               <p className="text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
-                Votely is currently in its initial Phase 1 deployment. Once organizers publish their awards ceremonies,
-                they will be indexed here.
+                Once organizers publish their awards ceremonies, they are indexed here for public discovery and voting.
               </p>
             </div>
 
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link href="/register">
                 <Button variant="primaryGlow" size="sm">
-                  Be the first to create an awards event
+                  Create an awards event
                 </Button>
               </Link>
               <Button
@@ -118,12 +217,9 @@ export function DiscoverySection() {
                 <span>Preview Sample Award Card</span>
               </Button>
             </div>
-            <p className="text-[11px] text-slate-500 pt-2">
-              Note: As per our PRS standards, Votely never invents fake competitions or fabricates voter statistics.
-            </p>
           </div>
         ) : (
-          /* When demonstration preview is toggled, display the preview clearly marked */
+          /* Prototype Demonstration Preview */
           <div className="space-y-4">
             <div className="flex items-center justify-between p-3 rounded-xl bg-violet-950/30 border border-violet-500/30 text-xs text-violet-300">
               <div className="flex items-center gap-2">
@@ -165,28 +261,16 @@ export function DiscoverySection() {
                 </div>
 
                 <div className="pt-4 border-t border-slate-800 space-y-4">
-                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
-                    <div className="flex items-center gap-1.5">
-                      <Filter className="h-3.5 w-3.5 text-violet-400" />
-                      <span>{DEMO_EVENT.categoriesCount} Categories</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5 text-violet-400" />
-                      <span>{DEMO_EVENT.nomineesCount} Nominees</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 col-span-2">
-                      <Calendar className="h-3.5 w-3.5 text-violet-400" />
-                      <span>Closes: {DEMO_EVENT.votingEndsAt}</span>
-                    </div>
+                  <div className="text-xs text-slate-400 flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-violet-400" />
+                    <span>Closes: {DEMO_EVENT.votingEndsAt}</span>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Link href={`/events/${DEMO_EVENT.slug}`} className="w-full">
-                      <Button variant="outline" size="sm" className="w-full justify-center">
-                        View Event Page
-                      </Button>
-                    </Link>
-                  </div>
+                  <Link href={`/events/${DEMO_EVENT.slug}`} className="w-full">
+                    <Button variant="outline" size="sm" className="w-full justify-center">
+                      View Event Page
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>
