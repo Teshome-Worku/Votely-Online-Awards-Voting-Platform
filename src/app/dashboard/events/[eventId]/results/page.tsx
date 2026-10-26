@@ -6,7 +6,6 @@ import { calculateEventResults } from "@/lib/results";
 import { FinalizationPanel } from "@/components/events/FinalizationPanel";
 import { ResultsBreakdown } from "@/components/events/ResultsBreakdown";
 import {
-  Award,
   ArrowLeft,
   ShieldCheck,
   History,
@@ -58,40 +57,20 @@ export default async function EventResultsPage({ params }: PageProps) {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#070a14] text-slate-100">
-      {/* Header */}
-      <header className="border-b border-slate-800 bg-[#0a0e1e] px-4 py-4 sm:px-8">
-        <div className="mx-auto max-w-7xl flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 ring-1 ring-violet-400/40">
-                <Award className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold tracking-tight text-white">Votely</span>
-            </Link>
-            <div className="h-4 w-px bg-slate-800 hidden sm:block" />
-            <span className="text-xs text-slate-400 font-mono hidden sm:inline">
-              Results & Standings
-            </span>
-          </div>
+    <div className="space-y-8">
+      {/* Navigation */}
+      <div className="flex items-center justify-between">
+        <Link
+          href={`/dashboard/events/${event.id}`}
+          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Back to Event Management</span>
+        </Link>
+      </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/dashboard/events/${event.id}`}
-              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Event Overview</span>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 py-10 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl space-y-8">
-          {/* Top Banner */}
-          <div className="rounded-3xl border border-slate-800 bg-[#0d1428] p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
+      {/* Top Banner */}
+      <div className="rounded-3xl border border-slate-800 bg-[#0d1428] p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-3">
                 <Badge variant="glow" className="flex items-center gap-1.5">
@@ -158,8 +137,6 @@ export default async function EventResultsPage({ params }: PageProps) {
               </div>
             )}
           </div>
-        </div>
-      </main>
     </div>
   );
 }

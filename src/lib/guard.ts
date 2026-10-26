@@ -14,20 +14,32 @@ export async function requireAuth(redirectTo: string = "/login"): Promise<SafeUs
 }
 
 /**
- * Server guard: Enforces that the user is an ORGANIZER or PLATFORM_ADMIN.
- * Redirects unauthenticated users to /login.
+ * Server guard: Enforces that the user is an authenticated ORGANIZER.
+ * Redirects unauthenticated users to /login?next=/dashboard.
+ * Redirects PLATFORM_ADMIN users to /admin to enforce role separation.
  */
 export async function requireOrganizer(): Promise<SafeUser> {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login?next=/dashboard");
   }
+
+  // Prevent PLATFORM_ADMIN from entering organizer dashboard
+  if (user.role === "PLATFORM_ADMIN") {
+    redirect("/admin");
+  }
+
+  if (user.role !== "ORGANIZER") {
+    redirect("/login");
+  }
+
   return user;
 }
 
 /**
  * Server guard: Enforces that the user is a PLATFORM_ADMIN.
- * Redirects unauthenticated users to /login, and non-admin users to 403 Forbidden.
+ * Redirects unauthenticated users to /login?next=/admin.
+ * Redirects non-admin ORGANIZER users to /dashboard to enforce role separation.
  */
 export async function requirePlatformAdmin(): Promise<SafeUser> {
   const user = await getCurrentUser();
@@ -36,8 +48,7 @@ export async function requirePlatformAdmin(): Promise<SafeUser> {
   }
 
   if (user.role !== "PLATFORM_ADMIN") {
-    // Return forbidden response or redirect to access-denied
-    redirect("/access-denied");
+    redirect("/dashboard");
   }
 
   return user;

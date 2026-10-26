@@ -12,7 +12,7 @@ import { loginAction } from "@/actions/auth";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/dashboard";
+  const explicitNext = searchParams.get("next");
 
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -37,8 +37,21 @@ function LoginForm() {
         return;
       }
 
-      // Successful login -> Redirect to dashboard or custom next
-      const targetUrl = next.startsWith("/") && next !== "/login" ? next : result.redirectUrl || "/dashboard";
+      // Role-based redirect resolution:
+      // PLATFORM_ADMIN always goes to /admin unless explicit next is an /admin route.
+      // ORGANIZER always goes to /dashboard unless explicit next is a valid /dashboard route.
+      let targetUrl = result.redirectUrl || "/dashboard";
+
+      if (explicitNext && explicitNext.startsWith("/") && explicitNext !== "/login") {
+        if (result.redirectUrl === "/admin") {
+          // If admin was directed with a dashboard query, override to admin
+          targetUrl = explicitNext.startsWith("/admin") ? explicitNext : "/admin";
+        } else {
+          // Organizer
+          targetUrl = explicitNext.startsWith("/admin") ? "/dashboard" : explicitNext;
+        }
+      }
+
       router.push(targetUrl);
       router.refresh();
     } catch {
@@ -56,10 +69,10 @@ function LoginForm() {
           </div>
           <Badge variant="glow">Sign In</Badge>
           <h1 className="text-2xl font-extrabold text-white">
-            Organizer Login
+            Votely Sign In
           </h1>
           <p className="text-xs text-slate-400">
-            Sign in to manage your awards competitions and view results.
+            Sign in to your awards organizer account or platform console.
           </p>
         </div>
 

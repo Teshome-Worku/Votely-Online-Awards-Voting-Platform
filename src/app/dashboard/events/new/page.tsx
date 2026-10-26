@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Award, ArrowLeft, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -69,30 +69,18 @@ export default function NewEventPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#070a14] text-slate-100">
-      {/* Top Header */}
-      <header className="border-b border-slate-800 bg-[#0a0e1e] px-4 py-4 sm:px-8">
-        <div className="mx-auto max-w-5xl flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 ring-1 ring-violet-400/40">
-              <Award className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-white">Votely</span>
-          </Link>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Dashboard</span>
-          </Link>
-        </div>
-      </header>
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="flex items-center justify-between">
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Back to Competitions</span>
+        </Link>
+      </div>
 
-      {/* Main Form Container */}
-      <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-3xl space-y-8">
-          <div className="rounded-3xl border border-slate-800 bg-[#0d1326] p-8 sm:p-10 shadow-2xl space-y-6">
+      <div className="rounded-3xl border border-slate-800 bg-[#0d1326] p-8 sm:p-10 shadow-2xl space-y-6">
             <div className="space-y-2 border-b border-slate-800 pb-6">
               <Badge variant="glow">Event Initialization</Badge>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
@@ -300,8 +288,6 @@ export default function NewEventPage() {
               </div>
             </form>
           </div>
-        </div>
-      </main>
     </div>
   );
 }

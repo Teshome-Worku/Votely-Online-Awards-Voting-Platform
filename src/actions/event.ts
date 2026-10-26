@@ -28,6 +28,10 @@ export async function createEventAction(
     return { success: false, error: "Authentication required to create an event." };
   }
 
+  if (user.role !== "ORGANIZER") {
+    return { success: false, error: "Unauthorized: Only registered organizers may create awards competitions." };
+  }
+
   const name = formData.get("name")?.toString() || "";
   const description = formData.get("description")?.toString() || "";
   const startDate = formData.get("startDate")?.toString() || "";
@@ -76,7 +80,11 @@ export async function createEventAction(
       },
     });
 
-    revalidatePath("/dashboard");
+    try {
+      revalidatePath("/dashboard");
+    } catch {
+      // Ignore static cache context errors in tests
+    }
     return {
       success: true,
       eventId: event.id,
@@ -160,9 +168,13 @@ export async function updateEventAction(
       },
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath(`/dashboard/events/${eventId}`);
-    revalidatePath(`/events/${updated.slug}`);
+    try {
+      revalidatePath("/dashboard");
+      revalidatePath(`/dashboard/events/${eventId}`);
+      revalidatePath(`/events/${updated.slug}`);
+    } catch {
+      // Ignore static cache context errors in tests
+    }
 
     return { success: true, event: updated };
   } catch (err: unknown) {
@@ -213,9 +225,13 @@ export async function updateEventStatusAction(
       data: { status: targetStatus },
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath(`/dashboard/events/${eventId}`);
-    revalidatePath(`/events/${updated.slug}`);
+    try {
+      revalidatePath("/dashboard");
+      revalidatePath(`/dashboard/events/${eventId}`);
+      revalidatePath(`/events/${updated.slug}`);
+    } catch {
+      // Ignore static cache context errors in tests
+    }
 
     return { success: true, event: updated };
   } catch (err: unknown) {

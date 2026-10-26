@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { requireOrganizer } from "@/lib/guard";
 import { prisma } from "@/lib/prisma";
 import {
-  Award,
   ArrowLeft,
   Calendar,
   Clock,
@@ -76,38 +75,20 @@ export default async function EventManagePage({ params }: Props) {
   const isPubliclyAvailable = event.status !== "DRAFT" && event.status !== "ARCHIVED";
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#070a14] text-slate-100">
-      {/* Top Header */}
-      <header className="border-b border-slate-800 bg-[#0a0e1e] px-4 py-4 sm:px-8">
-        <div className="mx-auto max-w-7xl flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 ring-1 ring-violet-400/40">
-                <Award className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold tracking-tight text-white">Votely</span>
-            </Link>
-            <div className="h-4 w-px bg-slate-800 hidden sm:block" />
-            <span className="text-xs text-slate-400 font-mono hidden sm:inline">
-              Event Management
-            </span>
-          </div>
+    <div className="space-y-8">
+      {/* Back Link */}
+      <div className="flex items-center justify-between">
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Back to Competitions</span>
+        </Link>
+      </div>
 
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Dashboard</span>
-          </Link>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="flex-1 py-10 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl space-y-8">
-          {/* Top Title Bar */}
-          <div className="rounded-3xl border border-slate-800 bg-[#0d1428] p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
+      {/* Top Title Bar */}
+      <div className="rounded-3xl border border-slate-800 bg-[#0d1428] p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-3">
                 {getStatusBadge(event.status)}
@@ -230,8 +211,6 @@ export default async function EventManagePage({ params }: Props) {
               categories={event.categories}
             />
           </div>
-        </div>
-      </main>
     </div>
   );
 }
