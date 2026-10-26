@@ -113,7 +113,7 @@ function LoginForm() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>Signing in...</span>
                 </>
-              ) : (ant
+              ) : (
                 <>
                   <span>Sign In to Dashboard</span>
                   <ArrowRight className="h-4 w-4" />
