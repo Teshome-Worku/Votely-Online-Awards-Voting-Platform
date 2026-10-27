@@ -17,10 +17,10 @@ export default function NewEventPage() {
 
   // Default suggested dates (starting today, running 30 days, voting open for the middle 2 weeks)
   const now = new Date();
-  const defaultStart = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-  const defaultVotingStart = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-  const defaultVotingEnd = new Date(now.getTime() + 20 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
-  const defaultEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  const defaultStart = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16); // 24 hours from now
+  const defaultVotingStart = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16); // 3 days from now to allow for event setup
+  const defaultVotingEnd = new Date(now.getTime() + 20 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16); // 20 days from now, giving a 17-day voting window
+  const defaultEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16); // 30 days from now, giving a 10-day post-voting buffer
 
   const [formData, setFormData] = React.useState({
     name: "",
@@ -81,213 +81,213 @@ export default function NewEventPage() {
       </div>
 
       <div className="rounded-3xl border border-slate-800 bg-[#0d1326] p-8 sm:p-10 shadow-2xl space-y-6">
-            <div className="space-y-2 border-b border-slate-800 pb-6">
-              <Badge variant="glow">Event Initialization</Badge>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-                Create New Awards Competition
-              </h1>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Define the title, description, and timeline for your awards. Newly created events start in <strong>Draft</strong> status and are strictly private until you publish them.
+        <div className="space-y-2 border-b border-slate-800 pb-6">
+          <Badge variant="glow">Event Initialization</Badge>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+            Create New Awards Competition
+          </h1>
+          <p className="text-sm text-slate-400 leading-relaxed">
+            Define the title, description, and timeline for your awards. Newly created events start in <strong>Draft</strong> status and are strictly private until you publish them.
+          </p>
+        </div>
+
+        {generalError && (
+          <div className="rounded-xl border border-red-500/30 bg-red-950/20 p-4 text-xs text-red-300 flex items-start gap-2.5">
+            <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+            <span>{generalError}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Event Name */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">
+              Awards Event Name *
+            </label>
+            <Input
+              type="text"
+              required
+              placeholder="e.g. Ethiopian Tech Leadership Awards 2026"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              disabled={loading}
+            />
+            {fieldErrors.name ? (
+              <p className="text-xs text-red-400">{fieldErrors.name}</p>
+            ) : (
+              <p className="text-[11px] text-slate-500">
+                A clean URL slug will be automatically generated from this name.
               </p>
-            </div>
-
-            {generalError && (
-              <div className="rounded-xl border border-red-500/30 bg-red-950/20 p-4 text-xs text-red-300 flex items-start gap-2.5">
-                <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
-                <span>{generalError}</span>
-              </div>
             )}
+          </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Event Name */}
+          {/* Event Description */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">
+              Event Description *
+            </label>
+            <textarea
+              required
+              rows={4}
+              placeholder="Describe the ceremony, eligible sectors, evaluation criteria, and voting instructions..."
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              disabled={loading}
+              className="flex w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 focus-visible:border-violet-500 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+            />
+            {fieldErrors.description && (
+              <p className="text-xs text-red-400">{fieldErrors.description}</p>
+            )}
+          </div>
+
+          {/* Event Schedule (Start / End) */}
+          <div className="space-y-3 pt-2 border-t border-slate-800/80">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-violet-400">
+              Event Duration & Voting Window
+            </h3>
+            <p className="text-xs text-slate-400">
+              Voting window must sit cleanly inside the overall event start and end dates.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300">
-                  Awards Event Name *
+                  Event Start Date *
                 </label>
                 <Input
-                  type="text"
+                  type="datetime-local"
                   required
-                  placeholder="e.g. Ethiopian Tech Leadership Awards 2026"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   disabled={loading}
                 />
-                {fieldErrors.name ? (
-                  <p className="text-xs text-red-400">{fieldErrors.name}</p>
-                ) : (
-                  <p className="text-[11px] text-slate-500">
-                    A clean URL slug will be automatically generated from this name.
-                  </p>
+                {fieldErrors.startDate && (
+                  <p className="text-xs text-red-400">{fieldErrors.startDate}</p>
                 )}
               </div>
 
-              {/* Event Description */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-300">
-                  Event Description *
+                  Event End Date *
                 </label>
-                <textarea
+                <Input
+                  type="datetime-local"
                   required
-                  rows={4}
-                  placeholder="Describe the ceremony, eligible sectors, evaluation criteria, and voting instructions..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  value={formData.endDate}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                   disabled={loading}
-                  className="flex w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/70 focus-visible:border-violet-500 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
                 />
-                {fieldErrors.description && (
-                  <p className="text-xs text-red-400">{fieldErrors.description}</p>
+                {fieldErrors.endDate && (
+                  <p className="text-xs text-red-400">{fieldErrors.endDate}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">
+                  Voting Opens *
+                </label>
+                <Input
+                  type="datetime-local"
+                  required
+                  value={formData.votingStartsAt}
+                  onChange={(e) => setFormData({ ...formData, votingStartsAt: e.target.value })}
+                  disabled={loading}
+                />
+                {fieldErrors.votingStartsAt && (
+                  <p className="text-xs text-red-400">{fieldErrors.votingStartsAt}</p>
                 )}
               </div>
 
-              {/* Event Schedule (Start / End) */}
-              <div className="space-y-3 pt-2 border-t border-slate-800/80">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-violet-400">
-                  Event Duration & Voting Window
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Voting window must sit cleanly inside the overall event start and end dates.
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-300">
-                      Event Start Date *
-                    </label>
-                    <Input
-                      type="datetime-local"
-                      required
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      disabled={loading}
-                    />
-                    {fieldErrors.startDate && (
-                      <p className="text-xs text-red-400">{fieldErrors.startDate}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-300">
-                      Event End Date *
-                    </label>
-                    <Input
-                      type="datetime-local"
-                      required
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      disabled={loading}
-                    />
-                    {fieldErrors.endDate && (
-                      <p className="text-xs text-red-400">{fieldErrors.endDate}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-300">
-                      Voting Opens *
-                    </label>
-                    <Input
-                      type="datetime-local"
-                      required
-                      value={formData.votingStartsAt}
-                      onChange={(e) => setFormData({ ...formData, votingStartsAt: e.target.value })}
-                      disabled={loading}
-                    />
-                    {fieldErrors.votingStartsAt && (
-                      <p className="text-xs text-red-400">{fieldErrors.votingStartsAt}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-300">
-                      Voting Closes *
-                    </label>
-                    <Input
-                      type="datetime-local"
-                      required
-                      value={formData.votingEndsAt}
-                      onChange={(e) => setFormData({ ...formData, votingEndsAt: e.target.value })}
-                      disabled={loading}
-                    />
-                    {fieldErrors.votingEndsAt && (
-                      <p className="text-xs text-red-400">{fieldErrors.votingEndsAt}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Optional Branding URLs */}
-              <div className="space-y-3 pt-2 border-t border-slate-800/80">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                  Optional Media & Branding
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400">
-                      Banner Image URL
-                    </label>
-                    <Input
-                      type="url"
-                      placeholder="https://example.com/banner.jpg"
-                      value={formData.bannerUrl}
-                      onChange={(e) => setFormData({ ...formData, bannerUrl: e.target.value })}
-                      disabled={loading}
-                    />
-                    {fieldErrors.bannerUrl && (
-                      <p className="text-xs text-red-400">{fieldErrors.bannerUrl}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400">
-                      Logo Image URL
-                    </label>
-                    <Input
-                      type="url"
-                      placeholder="https://example.com/logo.png"
-                      value={formData.logoUrl}
-                      onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                      disabled={loading}
-                    />
-                    {fieldErrors.logoUrl && (
-                      <p className="text-xs text-red-400">{fieldErrors.logoUrl}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Submission Button */}
-              <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between gap-4">
-                <Link href="/dashboard">
-                  <Button type="button" variant="ghost" disabled={loading} className="text-xs">
-                    Cancel
-                  </Button>
-                </Link>
-
-                <Button
-                  type="submit"
-                  variant="primaryGlow"
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">
+                  Voting Closes *
+                </label>
+                <Input
+                  type="datetime-local"
+                  required
+                  value={formData.votingEndsAt}
+                  onChange={(e) => setFormData({ ...formData, votingEndsAt: e.target.value })}
                   disabled={loading}
-                  className="px-6 py-5 text-sm font-semibold flex items-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Creating Event...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Save as Draft</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
+                />
+                {fieldErrors.votingEndsAt && (
+                  <p className="text-xs text-red-400">{fieldErrors.votingEndsAt}</p>
+                )}
               </div>
-            </form>
+            </div>
           </div>
+
+          {/* Optional Branding URLs */}
+          <div className="space-y-3 pt-2 border-t border-slate-800/80">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              Optional Media & Branding
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-400">
+                  Banner Image URL
+                </label>
+                <Input
+                  type="url"
+                  placeholder="https://example.com/banner.jpg"
+                  value={formData.bannerUrl}
+                  onChange={(e) => setFormData({ ...formData, bannerUrl: e.target.value })}
+                  disabled={loading}
+                />
+                {fieldErrors.bannerUrl && (
+                  <p className="text-xs text-red-400">{fieldErrors.bannerUrl}</p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-400">
+                  Logo Image URL
+                </label>
+                <Input
+                  type="url"
+                  placeholder="https://example.com/logo.png"
+                  value={formData.logoUrl}
+                  onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                  disabled={loading}
+                />
+                {fieldErrors.logoUrl && (
+                  <p className="text-xs text-red-400">{fieldErrors.logoUrl}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Submission Button */}
+          <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between gap-4">
+            <Link href="/dashboard">
+              <Button type="button" variant="ghost" disabled={loading} className="text-xs">
+                Cancel
+              </Button>
+            </Link>
+
+            <Button
+              type="submit"
+              variant="primaryGlow"
+              disabled={loading}
+              className="px-6 py-5 text-sm font-semibold flex items-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Creating Event...</span>
+                </>
+              ) : (
+                <>
+                  <span>Save as Draft</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
