@@ -31,17 +31,39 @@ function calculateRemaining(targetTimestamp: number, currentTimestamp: number): 
   return { totalMs, days, hours, minutes, seconds };
 }
 
-function useNow(): number | null {
-  const subscribe = React.useCallback((callback: () => void) => {
-    const id = setInterval(callback, 1000);
-    return () => clearInterval(id);
-  }, []);
+// Global cached time store to ensure stable snapshots for useSyncExternalStore
+let nowStore = typeof window !== "undefined" ? Date.now() : 0;
+const subscribers = new Set<() => void>();
+let timerInterval: ReturnType<typeof setInterval> | null = null;
 
-  return React.useSyncExternalStore(
-    subscribe,
-    () => Date.now(),
-    () => null
-  );
+function subscribeNow(callback: () => void) {
+  subscribers.add(callback);
+  if (!timerInterval && typeof window !== "undefined") {
+    nowStore = Date.now();
+    timerInterval = setInterval(() => {
+      nowStore = Date.now();
+      subscribers.forEach((notify) => notify());
+    }, 1000);
+  }
+  return () => {
+    subscribers.delete(callback);
+    if (subscribers.size === 0 && timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  };
+}
+
+function getNowSnapshot(): number {
+  return nowStore;
+}
+
+function getServerSnapshot(): null {
+  return null;
+}
+
+function useNow(): number | null {
+  return React.useSyncExternalStore(subscribeNow, getNowSnapshot, getServerSnapshot);
 }
 
 export function EventCountdownTimer({
