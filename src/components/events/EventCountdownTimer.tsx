@@ -31,41 +31,6 @@ function calculateRemaining(targetTimestamp: number, currentTimestamp: number): 
   return { totalMs, days, hours, minutes, seconds };
 }
 
-// Global cached time store to ensure stable snapshots for useSyncExternalStore
-let nowStore = typeof window !== "undefined" ? Date.now() : 0;
-const subscribers = new Set<() => void>();
-let timerInterval: ReturnType<typeof setInterval> | null = null;
-
-function subscribeNow(callback: () => void) {
-  subscribers.add(callback);
-  if (!timerInterval && typeof window !== "undefined") {
-    nowStore = Date.now();
-    timerInterval = setInterval(() => {
-      nowStore = Date.now();
-      subscribers.forEach((notify) => notify());
-    }, 1000);
-  }
-  return () => {
-    subscribers.delete(callback);
-    if (subscribers.size === 0 && timerInterval) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-    }
-  };
-}
-
-function getNowSnapshot(): number {
-  return nowStore;
-}
-
-function getServerSnapshot(): null {
-  return null;
-}
-
-function useNow(): number | null {
-  return React.useSyncExternalStore(subscribeNow, getNowSnapshot, getServerSnapshot);
-}
-
 export function EventCountdownTimer({
   votingStartsAt,
   votingEndsAt,
@@ -80,10 +45,28 @@ export function EventCountdownTimer({
     [votingEndsAt]
   );
 
-  const currentMs = useNow();
+  const [mounted, setMounted] = React.useState(false);
+  const [currentMs, setCurrentMs] = React.useState<number>(0);
 
-  // If rendering on server or before client mount, render placeholder
-  if (currentMs === null) {
+  React.useEffect(() => {
+    // Schedule state update after initial hydration to guarantee zero SSR hydration mismatch
+    const mountTimer = setTimeout(() => {
+      setCurrentMs(Date.now());
+      setMounted(true);
+    }, 0);
+
+    const interval = setInterval(() => {
+      setCurrentMs(Date.now());
+    }, 1000);
+
+    return () => {
+      clearTimeout(mountTimer);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Server and pre-hydration client pass render identical placeholder
+  if (!mounted) {
     return (
       <div className="rounded-2xl border border-slate-800 bg-[#090e20]/60 p-5 animate-pulse flex items-center justify-center min-h-[120px]">
         <div className="flex items-center gap-2 text-xs text-slate-500">

@@ -82,12 +82,12 @@ export function Navbar() {
           </Link>
           <button
             type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="inline-flex items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="cursor-pointer touch-manipulation inline-flex items-center justify-center rounded-xl p-2 text-slate-300 hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 border border-slate-700/60 active:scale-95 transition-all"
             aria-label="Toggle navigation menu"
             aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {mobileMenuOpen ? <X className="h-6 w-6 text-violet-400" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
       </div>

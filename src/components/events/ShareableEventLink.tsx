@@ -19,8 +19,6 @@ interface ShareableEventLinkProps {
   variant?: "fullBanner" | "compact" | "buttonOnly";
 }
 
-const emptySubscribe = () => () => {};
-
 export function ShareableEventLink({
   eventSlug,
   eventName,
@@ -28,23 +26,31 @@ export function ShareableEventLink({
   variant = "fullBanner",
 }: ShareableEventLinkProps) {
   const [copied, setCopied] = React.useState(false);
+  const [fullUrl, setFullUrl] = React.useState(`/events/${eventSlug}`);
 
-  const origin = React.useSyncExternalStore(
-    emptySubscribe,
-    () => window.location.origin,
-    () => ""
-  );
-
-  const fullUrl = origin ? `${origin}/events/${eventSlug}` : `/events/${eventSlug}`;
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const origin = window.location.origin;
+      const timer = setTimeout(() => {
+        setFullUrl(`${origin}/events/${eventSlug}`);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [eventSlug]);
 
   const handleCopy = async () => {
     try {
+      const urlToCopy =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/events/${eventSlug}`
+          : fullUrl;
+
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(fullUrl);
+        await navigator.clipboard.writeText(urlToCopy);
       } else {
         // Fallback for older browsers or non-secure contexts
         const textArea = document.createElement("textarea");
-        textArea.value = fullUrl;
+        textArea.value = urlToCopy;
         textArea.style.position = "fixed";
         textArea.style.opacity = "0";
         document.body.appendChild(textArea);
@@ -63,10 +69,15 @@ export function ShareableEventLink({
   const handleNativeShare = async () => {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
+        const urlToShare =
+          typeof window !== "undefined"
+            ? `${window.location.origin}/events/${eventSlug}`
+            : fullUrl;
+
         await navigator.share({
           title: eventName,
           text: `Cast your verified vote for nominees in ${eventName} on Votely!`,
-          url: fullUrl,
+          url: urlToShare,
         });
       } catch {
         // User cancelled share dialog
