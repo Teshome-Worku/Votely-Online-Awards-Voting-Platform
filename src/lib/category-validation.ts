@@ -50,10 +50,13 @@ export function validateNomineeInput(input: Partial<NomineeInput>): {
   }
 
   if (input.imageUrl && input.imageUrl.trim().length > 0) {
-    try {
-      new URL(input.imageUrl.trim());
-    } catch {
-      errors.imageUrl = "Image URL must be a valid URL.";
+    const img = input.imageUrl.trim();
+    if (!img.startsWith("/") && !img.startsWith("data:image/")) {
+      try {
+        new URL(img);
+      } catch {
+        errors.imageUrl = "Image URL must be a valid URL or uploaded image path.";
+      }
     }
   }
 

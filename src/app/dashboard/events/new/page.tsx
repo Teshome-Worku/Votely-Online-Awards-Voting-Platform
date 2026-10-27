@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { createEventAction } from "@/actions/event";
 
 export default function NewEventPage() {
@@ -218,23 +219,27 @@ export default function NewEventPage() {
             </div>
           </div>
 
-          {/* Optional Branding URLs */}
-          <div className="space-y-3 pt-2 border-t border-slate-800/80">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Optional Media & Branding
-            </h3>
+          {/* Optional Media & Branding */}
+          <div className="space-y-4 pt-2 border-t border-slate-800/80">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                Optional Media & Branding
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Non-technical organizers can easily choose image files (.jpg, .png, .webp) directly from their device.
+              </p>
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-400">
-                  Banner Image URL
-                </label>
-                <Input
-                  type="url"
-                  placeholder="https://example.com/banner.jpg"
+                <ImageUpload
+                  label="Awards Banner Image"
+                  description="Upload a landscape banner image for your event page (e.g. 1200x400)."
                   value={formData.bannerUrl}
-                  onChange={(e) => setFormData({ ...formData, bannerUrl: e.target.value })}
+                  onChange={(url) => setFormData({ ...formData, bannerUrl: url })}
                   disabled={loading}
+                  aspectRatio="banner"
+                  placeholderText="https://example.com/banner.jpg"
                 />
                 {fieldErrors.bannerUrl && (
                   <p className="text-xs text-red-400">{fieldErrors.bannerUrl}</p>
@@ -242,15 +247,14 @@ export default function NewEventPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-400">
-                  Logo Image URL
-                </label>
-                <Input
-                  type="url"
-                  placeholder="https://example.com/logo.png"
+                <ImageUpload
+                  label="Awards Emblem or Logo"
+                  description="Upload your official competition logo or brand insignia."
                   value={formData.logoUrl}
-                  onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                  onChange={(url) => setFormData({ ...formData, logoUrl: url })}
                   disabled={loading}
+                  aspectRatio="square"
+                  placeholderText="https://example.com/logo.png"
                 />
                 {fieldErrors.logoUrl && (
                   <p className="text-xs text-red-400">{fieldErrors.logoUrl}</p>

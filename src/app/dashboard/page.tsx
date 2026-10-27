@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ShareableEventLink } from "@/components/events/ShareableEventLink";
 import type { EventStatus, Prisma } from "@prisma/client";
 
 export const metadata = {
@@ -441,6 +442,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                         <span>Edit</span>
                       </Button>
                     </Link>
+
+                    <ShareableEventLink
+                      eventSlug={event.slug}
+                      eventName={event.name}
+                      variant="buttonOnly"
+                    />
 
                     <Link href={`/events/${event.slug}`} target="_blank">
                       <Button

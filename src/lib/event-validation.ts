@@ -75,20 +75,26 @@ export function validateEventInput(input: Partial<EventInput>): EventValidationR
     }
   }
 
-  // Optional image URLs validation
+  // Optional image URLs validation (supports full URLs, local /uploads paths, and data URIs)
   if (input.bannerUrl && input.bannerUrl.trim().length > 0) {
-    try {
-      new URL(input.bannerUrl.trim());
-    } catch {
-      errors.bannerUrl = "Banner URL must be a valid URL.";
+    const banner = input.bannerUrl.trim();
+    if (!banner.startsWith("/") && !banner.startsWith("data:image/")) {
+      try {
+        new URL(banner);
+      } catch {
+        errors.bannerUrl = "Banner URL must be a valid URL or uploaded image path.";
+      }
     }
   }
 
   if (input.logoUrl && input.logoUrl.trim().length > 0) {
-    try {
-      new URL(input.logoUrl.trim());
-    } catch {
-      errors.logoUrl = "Logo URL must be a valid URL.";
+    const logo = input.logoUrl.trim();
+    if (!logo.startsWith("/") && !logo.startsWith("data:image/")) {
+      try {
+        new URL(logo);
+      } catch {
+        errors.logoUrl = "Logo URL must be a valid URL or uploaded image path.";
+      }
     }
   }
 

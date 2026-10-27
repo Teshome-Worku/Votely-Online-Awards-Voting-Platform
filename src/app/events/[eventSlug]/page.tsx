@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
@@ -8,6 +9,7 @@ import { Calendar, ShieldCheck, ArrowLeft, AlertCircle, Clock, Layers, Trophy } 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { PublicEventVoting } from "@/components/events/PublicEventVoting";
+import { EventCountdownTimer } from "@/components/events/EventCountdownTimer";
 import type { EventStatus } from "@prisma/client";
 
 interface PageProps {
@@ -134,8 +136,20 @@ export default async function PublicEventPage({ params }: PageProps) {
           )}
 
           {/* Event Header Card */}
-          <div className="rounded-3xl border border-slate-800 bg-[#0c1226] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-            <div className="relative z-10 space-y-6">
+          <div className="rounded-3xl border border-slate-800 bg-[#0c1226] shadow-2xl relative overflow-hidden">
+            {/* Optional Banner Image */}
+            {dbEvent.bannerUrl && (
+              <div className="relative w-full h-48 sm:h-64 md:h-80 overflow-hidden bg-slate-950 border-b border-slate-800">
+                <img
+                  src={dbEvent.bannerUrl}
+                  alt={dbEvent.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0c1226] via-[#0c1226]/50 to-transparent" />
+              </div>
+            )}
+
+            <div className="p-8 md:p-12 relative z-10 space-y-6">
               <div className="flex flex-wrap items-center gap-3">
                 {getPublicStatusBadge(dbEvent.status)}
                 <span className="text-xs text-slate-400">
@@ -147,9 +161,20 @@ export default async function PublicEventPage({ params }: PageProps) {
                 </span>
               </div>
 
-              <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight">
-                {dbEvent.name}
-              </h1>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                {dbEvent.logoUrl && (
+                  <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl overflow-hidden border border-slate-700 bg-slate-900 shrink-0 shadow-lg">
+                    <img
+                      src={dbEvent.logoUrl}
+                      alt={`${dbEvent.name} logo`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight">
+                  {dbEvent.name}
+                </h1>
+              </div>
 
               <p className="text-slate-300 max-w-3xl text-base sm:text-lg leading-relaxed whitespace-pre-wrap">
                 {dbEvent.description}
@@ -179,6 +204,13 @@ export default async function PublicEventPage({ params }: PageProps) {
               </div>
             </div>
           </div>
+
+          {/* Real-time Interactive Countdown Timer */}
+          <EventCountdownTimer
+            votingStartsAt={dbEvent.votingStartsAt.toISOString()}
+            votingEndsAt={dbEvent.votingEndsAt.toISOString()}
+            status={dbEvent.status}
+          />
 
           {/* Published Results Banner */}
           {dbEvent.resultsPublished && dbEvent.status === "FINALIZED" && (

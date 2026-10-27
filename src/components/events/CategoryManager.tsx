@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import {
   Plus,
   Trash2,
@@ -466,7 +467,7 @@ export function CategoryManager({ eventId, eventStatus, categories }: Props) {
                     {nomError && <p className="text-xs text-red-400">{nomError}</p>}
 
                     <form onSubmit={(e) => handleAddNominee(cat.id, e)} className="space-y-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-3">
                         <Input
                           type="text"
                           required
@@ -477,22 +478,22 @@ export function CategoryManager({ eventId, eventStatus, categories }: Props) {
                           className="text-xs"
                         />
                         <Input
-                          type="url"
-                          placeholder="Photo URL (Optional)"
-                          value={nomImage}
-                          onChange={(e) => setNomImage(e.target.value)}
+                          type="text"
+                          placeholder="Short Biography / Project Detail (Optional)"
+                          value={nomDesc}
+                          onChange={(e) => setNomDesc(e.target.value)}
                           disabled={nomLoading}
                           className="text-xs"
                         />
+                        <ImageUpload
+                          label="Nominee Photo (Optional)"
+                          description="Upload a photo (.jpg, .png) or paste an image URL."
+                          value={nomImage}
+                          onChange={setNomImage}
+                          disabled={nomLoading}
+                          aspectRatio="square"
+                        />
                       </div>
-                      <Input
-                        type="text"
-                        placeholder="Short Biography / Project Detail (Optional)"
-                        value={nomDesc}
-                        onChange={(e) => setNomDesc(e.target.value)}
-                        disabled={nomLoading}
-                        className="text-xs"
-                      />
                       <div className="flex items-center justify-end gap-2">
                         <Button
                           type="button"
@@ -546,12 +547,11 @@ export function CategoryManager({ eventId, eventStatus, categories }: Props) {
                               onChange={(e) => setEditNomDesc(e.target.value)}
                               className="text-xs"
                             />
-                            <Input
-                              type="url"
-                              placeholder="Photo URL..."
+                            <ImageUpload
+                              label="Nominee Photo"
                               value={editNomImage}
-                              onChange={(e) => setEditNomImage(e.target.value)}
-                              className="text-xs"
+                              onChange={setEditNomImage}
+                              aspectRatio="square"
                             />
                             <div className="flex items-center gap-1.5 pt-1">
                               <Button

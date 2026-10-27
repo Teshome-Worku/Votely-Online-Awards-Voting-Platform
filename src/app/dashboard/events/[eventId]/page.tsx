@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOrganizer } from "@/lib/guard";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EventStatusActions } from "@/components/events/EventStatusActions";
 import { CategoryManager } from "@/components/events/CategoryManager";
+import { ShareableEventLink } from "@/components/events/ShareableEventLink";
 import type { EventStatus } from "@prisma/client";
 
 export const metadata = {
@@ -125,6 +127,13 @@ export default async function EventManagePage({ params }: Props) {
             </div>
           </div>
 
+          {/* Prominent Shareable URL Component for Organizers */}
+          <ShareableEventLink
+            eventSlug={event.slug}
+            eventName={event.name}
+            isPublic={isPubliclyAvailable}
+          />
+
           {/* Lifecycle & Status Transition Controls */}
           <div className="rounded-3xl border border-slate-800 bg-[#0a0f21] p-6 sm:p-8 space-y-4 shadow-lg">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
@@ -159,10 +168,37 @@ export default async function EventManagePage({ params }: Props) {
                 {event.description}
               </p>
 
-              {event.bannerUrl && (
-                <div className="pt-4 border-t border-slate-800">
-                  <span className="text-xs font-semibold text-slate-400">Banner URL:</span>
-                  <p className="text-xs font-mono text-violet-300 break-all">{event.bannerUrl}</p>
+              {(event.bannerUrl || event.logoUrl) && (
+                <div className="pt-4 border-t border-slate-800 space-y-4">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+                    Event Media & Branding
+                  </span>
+                  <div className="flex flex-wrap items-center gap-4">
+                    {event.bannerUrl && (
+                      <div className="space-y-1">
+                        <span className="text-[11px] text-slate-400">Banner</span>
+                        <div className="h-20 w-36 rounded-xl border border-slate-700 overflow-hidden bg-slate-900">
+                          <img
+                            src={event.bannerUrl}
+                            alt="Event Banner"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {event.logoUrl && (
+                      <div className="space-y-1">
+                        <span className="text-[11px] text-slate-400">Logo</span>
+                        <div className="h-20 w-20 rounded-xl border border-slate-700 overflow-hidden bg-slate-900">
+                          <img
+                            src={event.logoUrl}
+                            alt="Event Logo"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
