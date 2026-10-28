@@ -27,15 +27,18 @@ export function ShareableEventLink({
 }: ShareableEventLinkProps) {
   const [copied, setCopied] = React.useState(false);
   const [fullUrl, setFullUrl] = React.useState(`/events/${eventSlug}`);
+  const [canShare, setCanShare] = React.useState(false);
 
   React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const origin = window.location.origin;
-      const timer = setTimeout(() => {
-        setFullUrl(`${origin}/events/${eventSlug}`);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
+    const timer = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        setFullUrl(`${window.location.origin}/events/${eventSlug}`);
+      }
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        setCanShare(true);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [eventSlug]);
 
   const handleCopy = async () => {
@@ -255,8 +258,8 @@ export function ShareableEventLink({
             <span>X (Twitter)</span>
           </a>
 
-          {/* Native Web Share API if available */}
-          {typeof navigator !== "undefined" && "share" in navigator && (
+          {/* Native Web Share API if available on client */}
+          {canShare && (
             <button
               type="button"
               onClick={handleNativeShare}
