@@ -7,12 +7,14 @@ import { updateEventAction } from "@/actions/event";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageUpload } from "@/components/ui/ImageUpload";
-import { AlertCircle, Loader2, ArrowRight } from "lucide-react";
+import { AlertCircle, Loader2, ArrowRight, Info, Lock } from "lucide-react";
+import type { EventStatus } from "@prisma/client";
 
 interface InitialData {
   id: string;
   name: string;
   description: string;
+  status?: EventStatus;
   startDate: string;
   endDate: string;
   votingStartsAt: string;
@@ -27,6 +29,9 @@ export function EditEventForm({ initialData }: { initialData: InitialData }) {
   const [generalError, setGeneralError] = React.useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
   const [formData, setFormData] = React.useState(initialData);
+
+  const isLive = initialData.status === "LIVE";
+  const isLocked = initialData.status === "FINALIZED" || initialData.status === "ARCHIVED";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -108,9 +113,34 @@ export function EditEventForm({ initialData }: { initialData: InitialData }) {
 
       {/* Schedules */}
       <div className="space-y-3 pt-2 border-t border-slate-800/80">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-violet-400">
-          Event Duration & Voting Window
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-violet-400">
+            Event Duration & Voting Window
+          </h3>
+          {initialData.status && (
+            <span className="text-[11px] text-slate-400">
+              Operational Status: <strong className="text-violet-300 font-mono">{initialData.status}</strong>
+            </span>
+          )}
+        </div>
+
+        {isLive && (
+          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-3 text-xs text-emerald-300 flex items-start gap-2">
+            <Info className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+            <span>
+              <strong>Voting is currently Live:</strong> Event and voting start times cannot be altered. You can extend the <strong>voting close deadline</strong> and <strong>event end date</strong>.
+            </span>
+          </div>
+        )}
+
+        {isLocked && (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-3 text-xs text-amber-300 flex items-start gap-2">
+            <Lock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <span>
+              <strong>Event is {initialData.status}:</strong> Certified results and timeline are permanently locked to preserve competition integrity.
+            </span>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
           <div className="space-y-1.5">
@@ -122,7 +152,7 @@ export function EditEventForm({ initialData }: { initialData: InitialData }) {
               required
               value={formData.startDate}
               onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              disabled={loading}
+              disabled={loading || isLive || isLocked}
             />
             {fieldErrors.startDate && (
               <p className="text-xs text-red-400">{fieldErrors.startDate}</p>
@@ -138,7 +168,7 @@ export function EditEventForm({ initialData }: { initialData: InitialData }) {
               required
               value={formData.endDate}
               onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-              disabled={loading}
+              disabled={loading || isLocked}
             />
             {fieldErrors.endDate && (
               <p className="text-xs text-red-400">{fieldErrors.endDate}</p>
@@ -156,7 +186,7 @@ export function EditEventForm({ initialData }: { initialData: InitialData }) {
               required
               value={formData.votingStartsAt}
               onChange={(e) => setFormData({ ...formData, votingStartsAt: e.target.value })}
-              disabled={loading}
+              disabled={loading || isLive || isLocked}
             />
             {fieldErrors.votingStartsAt && (
               <p className="text-xs text-red-400">{fieldErrors.votingStartsAt}</p>
@@ -172,7 +202,7 @@ export function EditEventForm({ initialData }: { initialData: InitialData }) {
               required
               value={formData.votingEndsAt}
               onChange={(e) => setFormData({ ...formData, votingEndsAt: e.target.value })}
-              disabled={loading}
+              disabled={loading || isLocked}
             />
             {fieldErrors.votingEndsAt && (
               <p className="text-xs text-red-400">{fieldErrors.votingEndsAt}</p>

@@ -35,6 +35,7 @@ export default async function EditEventPage({ params }: Props) {
     id: event.id,
     name: event.name,
     description: event.description,
+    status: event.status,
     startDate: new Date(event.startDate).toISOString().slice(0, 16),
     endDate: new Date(event.endDate).toISOString().slice(0, 16),
     votingStartsAt: new Date(event.votingStartsAt).toISOString().slice(0, 16),

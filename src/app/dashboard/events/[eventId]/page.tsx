@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { EventStatusActions } from "@/components/events/EventStatusActions";
 import { CategoryManager } from "@/components/events/CategoryManager";
 import { ShareableEventLink } from "@/components/events/ShareableEventLink";
+import { ScheduleEditModal } from "@/components/events/ScheduleEditModal";
 import type { EventStatus } from "@prisma/client";
 
 export const metadata = {
@@ -203,39 +204,60 @@ export default async function EventManagePage({ params }: Props) {
               )}
             </div>
 
-            {/* Timelines Card */}
-            <div className="rounded-3xl border border-slate-800 bg-[#0d1326] p-6 sm:p-8 space-y-6">
-              <h3 className="text-base font-bold text-white">Schedules</h3>
-
-              <div className="space-y-4 text-xs">
-                <div className="space-y-1">
-                  <span className="font-semibold text-slate-400 flex items-center gap-1.5">
+            {/* Timelines Card with Interactive Schedule Editing */}
+            <div className="rounded-3xl border border-slate-800 bg-[#0d1326] p-6 sm:p-8 space-y-6 flex flex-col justify-between shadow-lg">
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-violet-400" />
-                    <span>Event Window</span>
-                  </span>
-                  <p className="text-slate-200 pl-5.5 font-medium">
-                    {new Date(event.startDate).toLocaleString()}
-                  </p>
-                  <p className="text-slate-400 pl-5.5">to</p>
-                  <p className="text-slate-200 pl-5.5 font-medium">
-                    {new Date(event.endDate).toLocaleString()}
-                  </p>
+                    <span>Schedules</span>
+                  </h3>
+                  <Badge variant="outline" className="text-[10px] uppercase font-mono">
+                    {event.status}
+                  </Badge>
                 </div>
 
-                <div className="space-y-1 pt-3 border-t border-slate-800">
-                  <span className="font-semibold text-slate-400 flex items-center gap-1.5">
-                    <Clock className="h-4 w-4 text-indigo-400" />
-                    <span>Voting Window</span>
-                  </span>
-                  <p className="text-slate-200 pl-5.5 font-medium">
-                    {new Date(event.votingStartsAt).toLocaleString()}
-                  </p>
-                  <p className="text-slate-400 pl-5.5">to</p>
-                  <p className="text-slate-200 pl-5.5 font-medium">
-                    {new Date(event.votingEndsAt).toLocaleString()}
-                  </p>
+                <div className="space-y-4 text-xs">
+                  <div className="space-y-1">
+                    <span className="font-semibold text-slate-400 flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-violet-400" />
+                      <span>Event Window</span>
+                    </span>
+                    <p className="text-slate-200 pl-5 font-medium">
+                      {new Date(event.startDate).toLocaleString()}
+                    </p>
+                    <p className="text-slate-400 pl-5 text-[11px]">to</p>
+                    <p className="text-slate-200 pl-5 font-medium">
+                      {new Date(event.endDate).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1 pt-3 border-t border-slate-800">
+                    <span className="font-semibold text-slate-400 flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-indigo-400" />
+                      <span>Voting Window</span>
+                    </span>
+                    <p className="text-slate-200 pl-5 font-medium">
+                      {new Date(event.votingStartsAt).toLocaleString()}
+                    </p>
+                    <p className="text-slate-400 pl-5 text-[11px]">to</p>
+                    <p className="text-slate-200 pl-5 font-medium">
+                      {new Date(event.votingEndsAt).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
               </div>
+
+              {/* Schedule Edit Button / Modal Trigger */}
+              <ScheduleEditModal
+                eventId={event.id}
+                eventName={event.name}
+                status={event.status}
+                startDate={event.startDate.toISOString()}
+                endDate={event.endDate.toISOString()}
+                votingStartsAt={event.votingStartsAt.toISOString()}
+                votingEndsAt={event.votingEndsAt.toISOString()}
+              />
             </div>
           </div>
 
