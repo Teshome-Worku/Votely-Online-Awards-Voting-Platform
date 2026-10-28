@@ -28,10 +28,19 @@ async function runTests() {
   console.log("   Votely Phase 3: Events & Lifecycle Test Suite        ");
   console.log("=======================================================\n");
 
-  // Clean test tables
-  await prisma.event.deleteMany({});
-  await prisma.session.deleteMany({});
-  await prisma.user.deleteMany({});
+  // Clean only automated test records (protect user created events)
+  await prisma.event.deleteMany({
+    where: {
+      OR: [
+        { organizer: { email: { contains: "test.com" } } },
+        { slug: { startsWith: "ethiopian-music" } },
+        { slug: { startsWith: "private-internal" } },
+      ],
+    },
+  });
+  await prisma.user.deleteMany({
+    where: { email: { contains: "test.com" } },
+  });
 
   // Setup test organizers
   const org1Res = await registerOrganizer({

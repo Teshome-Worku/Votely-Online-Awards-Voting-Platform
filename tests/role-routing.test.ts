@@ -35,17 +35,23 @@ async function runTests() {
   console.log("   Votely: Role-Based Routing & Dashboard Auth Suite   ");
   console.log("=======================================================\n");
 
-  // Clean test tables
-  await prisma.auditLog.deleteMany({});
-  await prisma.finalizedResultSnapshot.deleteMany({});
-  await prisma.vote.deleteMany({});
-  await prisma.voterSession.deleteMany({});
-  await prisma.otpChallenge.deleteMany({});
-  await prisma.nominee.deleteMany({});
-  await prisma.category.deleteMany({});
-  await prisma.event.deleteMany({});
-  await prisma.session.deleteMany({});
-  await prisma.user.deleteMany({});
+  // Clean test records only
+  await prisma.event.deleteMany({
+    where: {
+      OR: [
+        { organizer: { email: { contains: "example.com" } } },
+        { organizer: { email: { contains: "test.com" } } },
+      ],
+    },
+  });
+  await prisma.user.deleteMany({
+    where: {
+      OR: [
+        { email: { contains: "example.com" } },
+        { email: { contains: "test.com" } },
+      ],
+    },
+  });
 
   // 1. Create Organizer and Platform Admin accounts
   const orgRes = await registerOrganizer({

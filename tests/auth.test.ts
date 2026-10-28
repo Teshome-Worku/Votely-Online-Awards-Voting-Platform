@@ -32,9 +32,15 @@ async function runTests() {
   console.log("   Votely Phase 2: Authentication & Security Test Suite ");
   console.log("=======================================================\n");
 
-  // Clean test tables
-  await prisma.session.deleteMany({});
-  await prisma.user.deleteMany({});
+  // Clean test records only
+  await prisma.user.deleteMany({
+    where: {
+      OR: [
+        { email: { contains: "example.com" } },
+        { email: { contains: "test.com" } },
+      ],
+    },
+  });
 
   // -------------------------------------------------------------------------
   // Test 1: Successful organizer registration

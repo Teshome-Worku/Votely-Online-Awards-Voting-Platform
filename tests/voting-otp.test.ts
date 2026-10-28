@@ -37,17 +37,15 @@ async function runTests() {
   console.log("   Votely Phase 5: Voting Rules & Phone OTP Test Suite   ");
   console.log("=======================================================\n");
 
-  // Clean test tables
+  // Clean test records only
   clearDevOtps();
   clearAllRateLimits();
-  await prisma.vote.deleteMany({});
-  await prisma.voterSession.deleteMany({});
-  await prisma.otpChallenge.deleteMany({});
-  await prisma.nominee.deleteMany({});
-  await prisma.category.deleteMany({});
-  await prisma.event.deleteMany({});
-  await prisma.session.deleteMany({});
-  await prisma.user.deleteMany({});
+  await prisma.event.deleteMany({
+    where: { organizer: { email: { contains: "test.com" } } },
+  });
+  await prisma.user.deleteMany({
+    where: { email: { contains: "test.com" } },
+  });
 
   // Setup organizer and live test event
   const orgRes = await registerOrganizer({

@@ -35,17 +35,13 @@ async function runTests() {
   console.log("   Votely Phase 6: Results & Finalization Test Suite   ");
   console.log("=======================================================\n");
 
-  // Clean test tables in cascade order
-  await prisma.auditLog.deleteMany({});
-  await prisma.finalizedResultSnapshot.deleteMany({});
-  await prisma.vote.deleteMany({});
-  await prisma.voterSession.deleteMany({});
-  await prisma.otpChallenge.deleteMany({});
-  await prisma.nominee.deleteMany({});
-  await prisma.category.deleteMany({});
-  await prisma.event.deleteMany({});
-  await prisma.session.deleteMany({});
-  await prisma.user.deleteMany({});
+  // Clean test records only
+  await prisma.event.deleteMany({
+    where: { organizer: { email: { contains: "test.com" } } },
+  });
+  await prisma.user.deleteMany({
+    where: { email: { contains: "test.com" } },
+  });
 
   // Setup test organizers
   const org1Res = await registerOrganizer({
