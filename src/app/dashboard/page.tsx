@@ -88,25 +88,24 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     }
   }
 
-  const [events, allCounts] = await Promise.all([
-    prisma.event.findMany({
-      where: whereClause,
-      include: {
-        categories: {
-          select: {
-            id: true,
-            nominees: { select: { id: true } },
-          },
+  const events = await prisma.event.findMany({
+    where: whereClause,
+    include: {
+      categories: {
+        select: {
+          id: true,
+          nominees: { select: { id: true } },
         },
       },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.event.groupBy({
-      by: ["status"],
-      where: { organizerId: user.id },
-      _count: { id: true },
-    }),
-  ]);
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const allCounts = await prisma.event.groupBy({
+    by: ["status"],
+    where: { organizerId: user.id },
+    _count: { id: true },
+  }).catch(() => []);
 
   const countMap: Record<string, number> = {};
   for (const c of allCounts) {

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requestOtp, verifyOtp, validateVoterSession } from "@/lib/otp";
+import { isVotingActive } from "@/lib/event-lifecycle";
 import { revalidatePath } from "next/cache";
 
 export interface RequestOtpResult {
@@ -44,13 +45,19 @@ export async function requestOtpAction(
     return { success: false, error: "Event not found." };
   }
 
-  if (event.status !== "LIVE") {
+  if (!isVotingActive(event)) {
+    const isClosed =
+      event.status === "CLOSED" ||
+      event.status === "FINALIZED" ||
+      event.status === "ARCHIVED";
+    const now = new Date();
+    if (isClosed || now > event.votingEndsAt) {
+      return { success: false, error: "Voting has closed for this event." };
+    }
+    if (now < event.votingStartsAt) {
+      return { success: false, error: "Voting window is not open at this time." };
+    }
     return { success: false, error: "Voting is not currently active for this event." };
-  }
-
-  const now = new Date();
-  if (now < event.votingStartsAt || now > event.votingEndsAt) {
-    return { success: false, error: "Voting window is not open at this time." };
   }
 
   return requestOtp(eventId, phoneNumber);
@@ -106,19 +113,22 @@ export async function submitVoteAction(payload: {
     return { success: false, error: "Event not found." };
   }
 
-  if (event.status !== "LIVE") {
+  if (!isVotingActive(event)) {
+    const isClosed =
+      event.status === "CLOSED" ||
+      event.status === "FINALIZED" ||
+      event.status === "ARCHIVED";
+    const now = new Date();
+    if (isClosed || now > event.votingEndsAt) {
+      return { success: false, error: "Voting has closed for this event." };
+    }
+    if (now < event.votingStartsAt) {
+      return { success: false, error: "Voting has not opened yet according to the event schedule." };
+    }
     return {
       success: false,
-      error: `Voting cannot be accepted because this event is currently ${event.status}.`,
+      error: `Voting cannot be accepted because this event is currently ${event.status.toLowerCase()}.`,
     };
-  }
-
-  const now = new Date();
-  if (now < event.votingStartsAt) {
-    return { success: false, error: "Voting has not opened yet according to the event schedule." };
-  }
-  if (now > event.votingEndsAt) {
-    return { success: false, error: "Voting has closed for this event." };
   }
 
   // 3. Validate Category relationship

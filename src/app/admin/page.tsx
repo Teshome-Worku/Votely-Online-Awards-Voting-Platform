@@ -24,41 +24,41 @@ export const dynamic = "force-dynamic";
 export default async function AdminPage() {
   await requirePlatformAdmin();
 
-  // Load real database data in parallel
-  const [users, events, auditLogs] = await Promise.all([
-    prisma.user.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        status: true,
-        organization: true,
-        createdAt: true,
+  // Load real database data safely
+  const users = await prisma.user.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      status: true,
+      organization: true,
+      createdAt: true,
+    },
+  }).catch(() => []);
+
+  const events = await prisma.event.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      organizer: {
+        select: { name: true, email: true, organization: true },
       },
-    }),
-    prisma.event.findMany({
-      orderBy: { createdAt: "desc" },
-      include: {
-        organizer: {
-          select: { name: true, email: true, organization: true },
-        },
-        _count: {
-          select: { categories: true, nominees: true, votes: true },
-        },
+      _count: {
+        select: { categories: true, nominees: true, votes: true },
       },
-      take: 20,
-    }),
-    prisma.auditLog.findMany({
-      orderBy: { createdAt: "desc" },
-      include: {
-        user: { select: { name: true, email: true } },
-        event: { select: { name: true, slug: true } },
-      },
-      take: 25,
-    }),
-  ]);
+    },
+    take: 20,
+  }).catch(() => []);
+
+  const auditLogs = await prisma.auditLog.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: { select: { name: true, email: true } },
+      event: { select: { name: true, slug: true } },
+    },
+    take: 25,
+  }).catch(() => []);
 
   const totalOrganizers = users.filter((u) => u.role === "ORGANIZER").length;
   const totalAdmins = users.filter((u) => u.role === "PLATFORM_ADMIN").length;

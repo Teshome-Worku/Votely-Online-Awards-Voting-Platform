@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { VotingModal } from "./VotingModal";
 import { Users, Check } from "lucide-react";
 import type { EventStatus } from "@prisma/client";
+import { isVotingActive } from "@/lib/event-lifecycle";
 
 interface NomineeItem {
   id: string;
@@ -25,10 +26,19 @@ interface Props {
   eventId: string;
   eventName: string;
   eventStatus: EventStatus;
+  votingStartsAt?: string | Date;
+  votingEndsAt?: string | Date;
   categories: CategoryItem[];
 }
 
-export function PublicEventVoting({ eventId, eventName, eventStatus, categories }: Props) {
+export function PublicEventVoting({
+  eventId,
+  eventName,
+  eventStatus,
+  votingStartsAt,
+  votingEndsAt,
+  categories,
+}: Props) {
   const [selectedNominee, setSelectedNominee] = React.useState<{
     id: string;
     name: string;
@@ -37,7 +47,30 @@ export function PublicEventVoting({ eventId, eventName, eventStatus, categories 
     categoryId: string;
   } | null>(null);
 
-  const isLive = eventStatus === "LIVE";
+  const isLive = React.useMemo(() => {
+    if (!votingStartsAt || !votingEndsAt) {
+      return eventStatus === "LIVE";
+    }
+    return isVotingActive({
+      status: eventStatus,
+      votingStartsAt,
+      votingEndsAt,
+    });
+  }, [eventStatus, votingStartsAt, votingEndsAt]);
+
+  const disabledLabel = React.useMemo(() => {
+    if (
+      eventStatus === "CLOSED" ||
+      eventStatus === "FINALIZED" ||
+      eventStatus === "ARCHIVED"
+    ) {
+      return "Voting Concluded";
+    }
+    if (votingEndsAt && Date.now() > new Date(votingEndsAt).getTime()) {
+      return "Voting Concluded";
+    }
+    return "Voting Not Open";
+  }, [eventStatus, votingEndsAt]);
 
   return (
     <>
@@ -127,9 +160,7 @@ export function PublicEventVoting({ eventId, eventName, eventStatus, categories 
                           disabled
                           className="w-full text-xs justify-center opacity-60 cursor-not-allowed"
                         >
-                          {eventStatus === "CLOSED" || eventStatus === "FINALIZED"
-                            ? "Voting Concluded"
-                            : "Voting Not Open"}
+                          {disabledLabel}
                         </Button>
                       )}
                     </div>

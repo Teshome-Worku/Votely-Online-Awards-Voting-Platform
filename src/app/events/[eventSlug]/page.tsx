@@ -11,6 +11,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { PublicEventVoting } from "@/components/events/PublicEventVoting";
 import { EventCountdownTimer } from "@/components/events/EventCountdownTimer";
 import type { EventStatus } from "@prisma/client";
+import { isVotingActive } from "@/lib/event-lifecycle";
 
 interface PageProps {
   params: Promise<{
@@ -20,7 +21,21 @@ interface PageProps {
 
 export const dynamic = "force-dynamic";
 
-function getPublicStatusBadge(status: EventStatus) {
+function getPublicStatusBadge(
+  status: EventStatus,
+  votingStartsAt: Date,
+  votingEndsAt: Date
+) {
+  const isLive = isVotingActive({ status, votingStartsAt, votingEndsAt });
+  if (isLive) {
+    return (
+      <Badge variant="live" className="flex items-center gap-1.5 px-3 py-1">
+        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+        <span className="font-semibold">Live for Voting</span>
+      </Badge>
+    );
+  }
+
   switch (status) {
     case "LIVE":
       return (
@@ -151,7 +166,7 @@ export default async function PublicEventPage({ params }: PageProps) {
 
             <div className="p-8 md:p-12 relative z-10 space-y-6">
               <div className="flex flex-wrap items-center gap-3">
-                {getPublicStatusBadge(dbEvent.status)}
+                {getPublicStatusBadge(dbEvent.status, dbEvent.votingStartsAt, dbEvent.votingEndsAt)}
                 <span className="text-xs text-slate-400">
                   Organized by: <strong className="text-slate-200">{dbEvent.organizer.organization || dbEvent.organizer.name}</strong>
                 </span>
@@ -259,6 +274,8 @@ export default async function PublicEventPage({ params }: PageProps) {
                 eventId={dbEvent.id}
                 eventName={dbEvent.name}
                 eventStatus={dbEvent.status}
+                votingStartsAt={dbEvent.votingStartsAt.toISOString()}
+                votingEndsAt={dbEvent.votingEndsAt.toISOString()}
                 categories={dbEvent.categories}
               />
             )}
