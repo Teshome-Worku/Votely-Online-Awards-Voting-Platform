@@ -273,6 +273,7 @@ export default async function PublicEventPage({ params }: PageProps) {
               <PublicEventVoting
                 eventId={dbEvent.id}
                 eventName={dbEvent.name}
+                eventSlug={dbEvent.slug}
                 eventStatus={dbEvent.status}
                 votingStartsAt={dbEvent.votingStartsAt.toISOString()}
                 votingEndsAt={dbEvent.votingEndsAt.toISOString()}
