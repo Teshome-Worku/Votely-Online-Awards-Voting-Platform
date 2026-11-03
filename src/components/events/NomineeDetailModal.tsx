@@ -47,17 +47,20 @@ export function NomineeDetailModal({
   onVote,
 }: NomineeDetailModalProps) {
   const [copied, setCopied] = React.useState(false);
-  const [nomineeUrl, setNomineeUrl] = React.useState(`/events/${eventSlug}?nominee=${nominee.id}`);
   const [canShare, setCanShare] = React.useState(false);
 
+  const nomineeUrl = React.useSyncExternalStore(
+    () => () => {},
+    () => `${window.location.origin}/events/${eventSlug}?nominee=${nominee.id}`,
+    () => `/events/${eventSlug}?nominee=${nominee.id}`
+  );
+
   React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      setNomineeUrl(`${window.location.origin}/events/${eventSlug}?nominee=${nominee.id}`);
-      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-        setCanShare(true);
-      }
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      const timer = setTimeout(() => setCanShare(true), 0);
+      return () => clearTimeout(timer);
     }
-  }, [eventSlug, nominee.id]);
+  }, []);
 
   // Lock background scroll when modal is open
   React.useEffect(() => {

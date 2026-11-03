@@ -86,19 +86,22 @@ export function PublicEventVoting({
     });
   }, [eventStatus, votingStartsAt, votingEndsAt]);
 
+  const isPastVotingEnd = React.useMemo(() => {
+    if (!votingEndsAt) return false;
+    return new Date().getTime() > new Date(votingEndsAt).getTime();
+  }, [votingEndsAt]);
+
   const disabledLabel = React.useMemo(() => {
     if (
       eventStatus === "CLOSED" ||
       eventStatus === "FINALIZED" ||
-      eventStatus === "ARCHIVED"
+      eventStatus === "ARCHIVED" ||
+      isPastVotingEnd
     ) {
       return "Voting Concluded";
     }
-    if (votingEndsAt && Date.now() > new Date(votingEndsAt).getTime()) {
-      return "Voting Concluded";
-    }
     return "Voting Not Open";
-  }, [eventStatus, votingEndsAt]);
+  }, [eventStatus, isPastVotingEnd]);
 
   // Aggregate all nominees with category metadata for the "ALL" view
   const allNomineesList = React.useMemo(() => {
@@ -148,13 +151,15 @@ export function PublicEventVoting({
     for (const cat of categories) {
       const match = cat.nominees.find((n) => n.id === nomineeParam);
       if (match) {
-        setSelectedCategory(cat.id);
-        setDetailNominee({
-          ...match,
-          categoryId: cat.id,
-          categoryName: cat.name,
-        });
-        break;
+        const timer = setTimeout(() => {
+          setSelectedCategory(cat.id);
+          setDetailNominee({
+            ...match,
+            categoryId: cat.id,
+            categoryName: cat.name,
+          });
+        }, 0);
+        return () => clearTimeout(timer);
       }
     }
   }, [categories]);

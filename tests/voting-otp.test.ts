@@ -18,6 +18,9 @@ import { getDevLastOtp, clearDevOtps, setSmsProviderForTesting, SmsProvider } fr
 import { submitVoteAction } from "../src/actions/voting";
 import { clearAllRateLimits } from "../src/lib/rate-limit";
 
+// Explicitly enforce test mode so automated suite uses DevSmsProvider and does not fire real SMS
+(process.env as Record<string, string | undefined>).NODE_ENV = "test";
+
 let passedCount = 0;
 let failedCount = 0;
 
