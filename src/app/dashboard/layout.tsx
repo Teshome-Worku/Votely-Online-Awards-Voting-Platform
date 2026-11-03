@@ -1,6 +1,7 @@
 import { requireOrganizer } from "@/lib/guard";
 import { prisma } from "@/lib/prisma";
 import { OrganizerShell } from "@/components/dashboard/OrganizerShell";
+import { syncAllActiveEventStatuses } from "@/lib/event-lifecycle";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,9 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await requireOrganizer();
+
+  // Synchronize wall-clock lifecycle transitions before aggregating counts
+  await syncAllActiveEventStatuses(prisma);
 
   // Aggregate real dynamic event counts for this organizer in a single query
   let total = 0;

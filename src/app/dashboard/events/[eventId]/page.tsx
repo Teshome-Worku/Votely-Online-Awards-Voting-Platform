@@ -17,6 +17,7 @@ import { EventStatusActions } from "@/components/events/EventStatusActions";
 import { CategoryManager } from "@/components/events/CategoryManager";
 import { ShareableEventLink } from "@/components/events/ShareableEventLink";
 import { ScheduleEditModal } from "@/components/events/ScheduleEditModal";
+import { syncEventLifecycleStatus } from "@/lib/event-lifecycle";
 import type { EventStatus } from "@prisma/client";
 
 export const metadata = {
@@ -74,6 +75,15 @@ export default async function EventManagePage({ params }: Props) {
   if (!event || event.organizerId !== user.id) {
     notFound();
   }
+
+  // Auto-sync lifecycle status based on current schedule
+  const effectiveStatus = await syncEventLifecycleStatus(prisma, {
+    id: event.id,
+    status: event.status,
+    votingStartsAt: event.votingStartsAt,
+    votingEndsAt: event.votingEndsAt,
+  });
+  event.status = effectiveStatus;
 
   const isPubliclyAvailable = event.status !== "DRAFT" && event.status !== "ARCHIVED";
 

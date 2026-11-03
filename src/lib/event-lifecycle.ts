@@ -75,3 +75,115 @@ export function isVotingActive(event: {
   return false;
 }
 
+/**
+ * Automatically synchronizes an event's lifecycle status based on current wall-clock time:
+ * 1. SCHEDULED -> LIVE: When now >= votingStartsAt and now <= votingEndsAt.
+ * 2. LIVE -> CLOSED: When now > votingEndsAt.
+ *
+ * DRAFT, FINALIZED, and ARCHIVED states are intentional and never mutated automatically.
+ * Returns the effective (synchronized) status.
+ */
+export async function syncEventLifecycleStatus(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  prismaClient: any,
+  event: {
+    id: string;
+    status: EventStatus;
+    votingStartsAt: Date | string;
+    votingEndsAt: Date | string;
+  }
+): Promise<EventStatus> {
+  const now = new Date();
+  const startsAt = new Date(event.votingStartsAt);
+  const endsAt = new Date(event.votingEndsAt);
+
+  // 1. Auto-transition SCHEDULED -> LIVE when voting start time has arrived
+  if (event.status === "SCHEDULED" && now >= startsAt && now <= endsAt) {
+    try {
+      await prismaClient.event.update({
+        where: { id: event.id },
+        data: { status: "LIVE" },
+      });
+      return "LIVE";
+    } catch (err) {
+      console.error(`Failed to auto-transition event ${event.id} to LIVE:`, err);
+      return "LIVE";
+    }
+  }
+
+  // 2. Auto-transition LIVE -> CLOSED when voting window has concluded
+  if (event.status === "LIVE" && now > endsAt) {
+    try {
+      await prismaClient.event.update({
+        where: { id: event.id },
+        data: { status: "CLOSED" },
+      });
+      return "CLOSED";
+    } catch (err) {
+      console.error(`Failed to auto-transition event ${event.id} to CLOSED:`, err);
+      return "CLOSED";
+    }
+  }
+
+  // 3. Auto-transition SCHEDULED -> CLOSED if scheduled event window is already in the past
+  if (event.status === "SCHEDULED" && now > endsAt) {
+    try {
+      await prismaClient.event.update({
+        where: { id: event.id },
+        data: { status: "CLOSED" },
+      });
+      return "CLOSED";
+    } catch (err) {
+      console.error(`Failed to auto-transition event ${event.id} to CLOSED:`, err);
+      return "CLOSED";
+    }
+  }
+
+  return event.status;
+}
+
+/**
+ * Runs bulk status sync across all events (used during dashboard loading or background tasks).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function syncAllActiveEventStatuses(prismaClient: any): Promise<void> {
+  const now = new Date();
+  try {
+    // Transition SCHEDULED -> LIVE
+    await prismaClient.event.updateMany({
+      where: {
+        status: "SCHEDULED",
+        votingStartsAt: { lte: now },
+        votingEndsAt: { gte: now },
+      },
+      data: {
+        status: "LIVE",
+      },
+    });
+
+    // Transition LIVE -> CLOSED
+    await prismaClient.event.updateMany({
+      where: {
+        status: "LIVE",
+        votingEndsAt: { lt: now },
+      },
+      data: {
+        status: "CLOSED",
+      },
+    });
+
+    // Transition SCHEDULED whose end has passed -> CLOSED
+    await prismaClient.event.updateMany({
+      where: {
+        status: "SCHEDULED",
+        votingEndsAt: { lt: now },
+      },
+      data: {
+        status: "CLOSED",
+      },
+    });
+  } catch (err) {
+    console.error("Non-fatal error in syncAllActiveEventStatuses:", err);
+  }
+}
+

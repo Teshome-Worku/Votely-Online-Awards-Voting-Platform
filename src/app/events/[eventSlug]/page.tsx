@@ -11,7 +11,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { PublicEventVoting } from "@/components/events/PublicEventVoting";
 import { EventCountdownTimer } from "@/components/events/EventCountdownTimer";
 import type { EventStatus } from "@prisma/client";
-import { isVotingActive } from "@/lib/event-lifecycle";
+import { isVotingActive, syncEventLifecycleStatus } from "@/lib/event-lifecycle";
 
 interface PageProps {
   params: Promise<{
@@ -105,6 +105,15 @@ export default async function PublicEventPage({ params }: PageProps) {
   if (!dbEvent) {
     notFound();
   }
+
+  // Auto-sync lifecycle status based on current schedule
+  const effectiveStatus = await syncEventLifecycleStatus(prisma, {
+    id: dbEvent.id,
+    status: dbEvent.status,
+    votingStartsAt: dbEvent.votingStartsAt,
+    votingEndsAt: dbEvent.votingEndsAt,
+  });
+  dbEvent.status = effectiveStatus;
 
   const isOwnerPreview = dbEvent.status === "DRAFT";
   const totalNominees = dbEvent.categories.reduce((acc, cat) => acc + cat.nominees.length, 0);

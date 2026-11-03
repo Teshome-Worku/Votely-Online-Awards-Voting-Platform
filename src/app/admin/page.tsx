@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requirePlatformAdmin } from "@/lib/guard";
 import { prisma } from "@/lib/prisma";
+import { syncAllActiveEventStatuses } from "@/lib/event-lifecycle";
 import {
   ShieldAlert,
   Users,
@@ -23,6 +24,9 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   await requirePlatformAdmin();
+
+  // Auto-sync event lifecycle statuses based on current schedule
+  await syncAllActiveEventStatuses(prisma);
 
   // Load real database data safely
   const users = await prisma.user.findMany({

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireOrganizer } from "@/lib/guard";
 import { prisma } from "@/lib/prisma";
+import { syncAllActiveEventStatuses } from "@/lib/event-lifecycle";
 import {
   Award,
   Plus,
@@ -70,6 +71,9 @@ function getStatusBadge(status: EventStatus) {
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const user = await requireOrganizer();
   const { status: statusFilter } = await searchParams;
+
+  // Auto-sync event lifecycle statuses based on current schedule
+  await syncAllActiveEventStatuses(prisma);
 
   // Retrieve organizer's own events from database with real category & nominee counts
   const whereClause: Prisma.EventWhereInput = {
