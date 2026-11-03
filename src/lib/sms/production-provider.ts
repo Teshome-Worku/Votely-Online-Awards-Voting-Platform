@@ -94,9 +94,13 @@ export class ProductionSmsProvider implements SmsProvider {
       }
 
       // Handle non-success acknowledgement from AfroMessage
-      const errorMsg =
+      let errorMsg =
+        (Array.isArray(data.response?.errors) && data.response.errors.length > 0
+          ? data.response.errors.join(", ")
+          : null) ||
         data.message ||
-        (data.error ? String(data.error) : "AfroMessage API rejected the dispatch request");
+        (data.error ? String(data.error) : null) ||
+        "AfroMessage API rejected the dispatch request";
 
       return {
         success: false,
