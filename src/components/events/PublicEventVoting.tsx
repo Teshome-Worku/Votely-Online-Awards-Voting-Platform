@@ -57,19 +57,9 @@ interface Props {
 
 /**
  * Render prestigious rank symbols and badges for 1st, 2nd, 3rd, and other places.
+ * Rankings are strictly per category (independent competition).
  */
-function renderRankBadge(rank: number, voteCount: number, totalScopeVotes: number) {
-  // If no votes have been recorded anywhere in this category yet, mark as contender
-  if (totalScopeVotes === 0 || voteCount === 0) {
-    if (totalScopeVotes === 0) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border bg-slate-900/80 text-slate-400 border-slate-800">
-          <span>Contender</span>
-        </span>
-      );
-    }
-  }
-
+function renderRankBadge(rank: number) {
   if (rank === 1) {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black tracking-wide border shadow-md bg-gradient-to-r from-amber-500/25 via-yellow-500/25 to-amber-600/25 text-amber-300 border-amber-400/60 shadow-amber-950/40 ring-1 ring-amber-400/30">
@@ -218,51 +208,54 @@ export function PublicEventVoting({
     prevLiveRef.current = isLive;
   }, [isLive, router]);
 
-  // 1. Process nominees sorted and ranked by votes for the "ALL" view
+  // 1. Process nominees for "ALL" view, preserving each nominee's true category ranking and voice
   const allNomineesList = React.useMemo((): RankedNominee[] => {
-    const list: (NomineeItem & { categoryId: string; categoryName: string })[] = [];
-    let totalVotesAll = 0;
+    const list: RankedNominee[] = [];
 
+    // Each category is an independent competition. Nominees are ranked strictly within their own category!
     for (const cat of categoriesState) {
-      for (const nom of cat.nominees) {
+      const totalVotesInCat = cat.nominees.reduce(
+        (sum, n) => sum + (n.voteCount || 0),
+        0
+      );
+
+      // Sort nominees within this category by votes descending, then displayOrder asc, then name asc
+      const sortedInCat = [...cat.nominees].sort((a, b) => {
+        const vA = a.voteCount || 0;
+        const vB = b.voteCount || 0;
+        if (vB !== vA) return vB - vA;
+        if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
+        return a.name.localeCompare(b.name);
+      });
+
+      // Compute standard competition rank within this category
+      let currentRank = 1;
+      const rankedInCat = sortedInCat.map((nom, idx) => {
         const vCount = nom.voteCount || 0;
-        totalVotesAll += vCount;
-        list.push({
+        if (idx > 0 && vCount < (sortedInCat[idx - 1].voteCount || 0)) {
+          currentRank = idx + 1;
+        }
+        const percentage =
+          totalVotesInCat > 0
+            ? Math.round((vCount / totalVotesInCat) * 1000) / 10
+            : sortedInCat.length === 1
+            ? 100
+            : 0;
+
+        return {
           ...nom,
           categoryId: cat.id,
           categoryName: cat.name,
-        });
-      }
+          rank: currentRank,
+          totalVotesInScope: totalVotesInCat,
+          percentage,
+        };
+      });
+
+      list.push(...rankedInCat);
     }
 
-    // Sort by voteCount descending, then displayOrder asc, then name asc
-    list.sort((a, b) => {
-      const vA = a.voteCount || 0;
-      const vB = b.voteCount || 0;
-      if (vB !== vA) return vB - vA;
-      if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
-      return a.name.localeCompare(b.name);
-    });
-
-    // Compute standard competition rank across all nominees
-    let currentRank = 1;
-    return list.map((nom, idx) => {
-      const vCount = nom.voteCount || 0;
-      if (idx > 0 && vCount < (list[idx - 1].voteCount || 0)) {
-        currentRank = idx + 1;
-      }
-      const percentage =
-        totalVotesAll > 0
-          ? Math.round((vCount / totalVotesAll) * 1000) / 10
-          : 0;
-
-      return {
-        ...nom,
-        rank: currentRank,
-        totalVotesInScope: totalVotesAll,
-        percentage,
-      };
-    });
+    return list;
   }, [categoriesState]);
 
   // Total nominees count across event
@@ -607,13 +600,13 @@ export function PublicEventVoting({
               const isCopied = copiedNomineeId === nom.id;
               const vCount = nom.voteCount ?? 0;
 
-              // Distinguish card border styling for top leaders
+              // Distinguish card border styling for top leaders per category
               const leaderBorder =
-                nom.rank === 1 && vCount > 0
+                nom.rank === 1
                   ? "border-amber-500/50 shadow-amber-950/20"
-                  : nom.rank === 2 && vCount > 0
+                  : nom.rank === 2
                   ? "border-slate-400/40 shadow-slate-950/20"
-                  : nom.rank === 3 && vCount > 0
+                  : nom.rank === 3
                   ? "border-amber-700/40 shadow-amber-950/15"
                   : "border-slate-800/90";
 
@@ -653,7 +646,7 @@ export function PublicEventVoting({
 
                   {/* Row 2: Prominent Rank Badge & Vote Count Badge */}
                   <div className="flex items-center justify-between gap-2 mb-3">
-                    {renderRankBadge(nom.rank, vCount, nom.totalVotesInScope)}
+                    {renderRankBadge(nom.rank)}
 
                     {/* Live Vote Voice Pill */}
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border border-violet-500/40 bg-gradient-to-r from-violet-950/80 to-indigo-950/80 text-violet-200 shadow-sm">

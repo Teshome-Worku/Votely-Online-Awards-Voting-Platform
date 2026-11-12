@@ -123,6 +123,8 @@ export async function calculateEventResults(eventId: string): Promise<EventResul
       const percentage =
         categoryVotesCount > 0
           ? Math.round((voteCount / categoryVotesCount) * 1000) / 10
+          : category.nominees.length === 1
+          ? 100
           : 0;
 
       return {
@@ -166,32 +168,53 @@ export async function calculateEventResults(eventId: string): Promise<EventResul
       });
     }
 
-    // Winner & Tie Analysis
+    // Winner & Tie Analysis per category
     let winnerStatus: CategoryWinnerStatus = "NO_VOTES_CAST";
     let isCategoryTie = false;
     const winners: NomineeResult[] = [];
 
-    if (hasVotes) {
-      const topVoteCount = rankedNominees[0]?.voteCount || 0;
+    if (rankedNominees.length > 0) {
+      if (hasVotes) {
+        const topVoteCount = rankedNominees[0]?.voteCount || 0;
 
-      if (topVoteCount > 0) {
-        // Find all nominees sharing top vote count
-        const topNominees = rankedNominees.filter((n) => n.voteCount === topVoteCount);
+        if (topVoteCount > 0) {
+          // Find all nominees sharing top vote count
+          const topNominees = rankedNominees.filter((n) => n.voteCount === topVoteCount);
 
-        if (topNominees.length > 1) {
-          // Documented Tie Handling: Formally declare Co-Winners
+          if (topNominees.length > 1) {
+            // Documented Tie Handling: Formally declare Co-Winners
+            winnerStatus = "CO_WINNERS";
+            isCategoryTie = true;
+            for (const top of topNominees) {
+              top.isWinner = true;
+              top.isTie = true;
+              winners.push(top);
+            }
+          } else if (topNominees.length === 1) {
+            winnerStatus = "DECIDED";
+            topNominees[0].isWinner = true;
+            topNominees[0].isTie = false;
+            winners.push(topNominees[0]);
+          }
+        }
+      } else {
+        // When 0 votes were cast, nominees compete within their category.
+        // If there is a sole contender in the category, they secured 1st place!
+        if (rankedNominees.length === 1) {
+          winnerStatus = "DECIDED";
+          rankedNominees[0].isWinner = true;
+          rankedNominees[0].isTie = false;
+          rankedNominees[0].percentage = 100;
+          winners.push(rankedNominees[0]);
+        } else {
+          // Multiple nominees tied with 0 votes in this category
           winnerStatus = "CO_WINNERS";
           isCategoryTie = true;
-          for (const top of topNominees) {
-            top.isWinner = true;
-            top.isTie = true;
-            winners.push(top);
+          for (const nom of rankedNominees) {
+            nom.isWinner = true;
+            nom.isTie = true;
+            winners.push(nom);
           }
-        } else if (topNominees.length === 1) {
-          winnerStatus = "DECIDED";
-          topNominees[0].isWinner = true;
-          topNominees[0].isTie = false;
-          winners.push(topNominees[0]);
         }
       }
     }

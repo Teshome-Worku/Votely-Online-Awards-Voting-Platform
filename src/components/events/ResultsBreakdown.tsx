@@ -160,7 +160,7 @@ function CategoryResultsCard({
               </span>
               <span className="text-white font-bold text-sm">{category.winners[0].name}</span>
               <span className="text-slate-400 ml-2 font-mono">
-                ({category.winners[0].voteCount.toLocaleString()} votes • {category.winners[0].percentage}% voice)
+                ({category.winners[0].voteCount.toLocaleString()} {category.winners[0].voteCount === 1 ? "vote" : "votes"} • {category.winners[0].percentage}% voice)
               </span>
             </div>
           </div>
@@ -183,16 +183,16 @@ function CategoryResultsCard({
               {category.winners.map((w) => w.name).join(" & ")}
             </span>
             <span className="text-slate-400 ml-2 font-mono">
-              (Tied with {category.winners[0].voteCount.toLocaleString()} votes each)
+              (Tied with {category.winners[0]?.voteCount.toLocaleString() ?? 0} votes each)
             </span>
           </div>
         </div>
       )}
 
-      {category.winnerStatus === "NO_VOTES_CAST" && (
+      {category.winnerStatus === "NO_VOTES_CAST" && category.nominees.length === 0 && (
         <div className="bg-slate-900/50 border-b border-slate-800 px-6 py-3 flex items-center gap-2.5 text-xs text-slate-400">
           <AlertCircle className="h-4 w-4 text-slate-400 shrink-0" />
-          <span>No accepted votes were submitted for this category. Nominees are listed in roster order.</span>
+          <span>No nominees or accepted votes were registered for this category.</span>
         </div>
       )}
 
@@ -209,7 +209,6 @@ function CategoryResultsCard({
                 key={nominee.nomineeId}
                 nominee={nominee}
                 categoryName={category.name}
-                categoryTotalVotes={category.totalVotes}
                 hasVotes={category.hasVotes}
               />
             ))}
@@ -220,14 +219,7 @@ function CategoryResultsCard({
   );
 }
 
-function renderRankBadge(rank: number, votes: number, totalInScope: number) {
-  if (totalInScope === 0 || votes === 0) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-slate-900/80 text-slate-400 border-slate-800">
-        <span>Contender</span>
-      </span>
-    );
-  }
+function renderRankBadge(rank: number) {
   if (rank === 1) {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-extrabold border bg-gradient-to-r from-amber-500/25 via-yellow-500/20 to-amber-500/10 text-amber-300 border-amber-500/50 shadow-sm shadow-amber-950/40">
@@ -262,19 +254,17 @@ function renderRankBadge(rank: number, votes: number, totalInScope: number) {
 function NomineeCard({
   nominee,
   categoryName,
-  categoryTotalVotes,
   hasVotes,
 }: {
   nominee: NomineeResult;
   categoryName: string;
-  categoryTotalVotes: number;
   hasVotes: boolean;
 }) {
-  const isLeader = nominee.rank === 1 && nominee.voteCount > 0;
-  const isSecond = nominee.rank === 2 && nominee.voteCount > 0;
-  const isThird = nominee.rank === 3 && nominee.voteCount > 0;
+  const isLeader = nominee.rank === 1;
+  const isSecond = nominee.rank === 2;
+  const isThird = nominee.rank === 3;
 
-  // Dynamic glowing border according to placement
+  // Dynamic glowing border according to placement within this category
   const cardBorder = nominee.isWinner || isLeader
     ? "border-amber-500/50 shadow-xl shadow-amber-950/20 bg-gradient-to-b from-[#131b38] via-[#0d142b] to-[#080d1e]"
     : isSecond
@@ -308,7 +298,7 @@ function NomineeCard({
 
         {/* Row 2: Rank Badge & Winner Status */}
         <div className="flex items-center justify-between gap-2 mb-3.5">
-          {renderRankBadge(nominee.rank, nominee.voteCount, categoryTotalVotes)}
+          {renderRankBadge(nominee.rank)}
 
           {nominee.isWinner && (
             <Badge
