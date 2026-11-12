@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VotingModal } from "./VotingModal";
@@ -14,23 +15,34 @@ import {
   Sparkles,
   Layers,
   ArrowRight,
+  Flame,
+  Volume2,
 } from "lucide-react";
 import type { EventStatus } from "@prisma/client";
 import { isVotingActive } from "@/lib/event-lifecycle";
 
-interface NomineeItem {
+export interface NomineeItem {
   id: string;
   name: string;
   description: string | null;
   imageUrl: string | null;
   displayOrder: number;
+  voteCount?: number;
 }
 
-interface CategoryItem {
+export interface CategoryItem {
   id: string;
   name: string;
   description: string | null;
   nominees: NomineeItem[];
+}
+
+interface RankedNominee extends NomineeItem {
+  categoryId: string;
+  categoryName: string;
+  rank: number;
+  totalVotesInScope: number;
+  percentage: number;
 }
 
 interface Props {
@@ -43,6 +55,55 @@ interface Props {
   categories: CategoryItem[];
 }
 
+/**
+ * Render prestigious rank symbols and badges for 1st, 2nd, 3rd, and other places.
+ */
+function renderRankBadge(rank: number, voteCount: number, totalScopeVotes: number) {
+  // If no votes have been recorded anywhere in this category yet, mark as contender
+  if (totalScopeVotes === 0 || voteCount === 0) {
+    if (totalScopeVotes === 0) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border bg-slate-900/80 text-slate-400 border-slate-800">
+          <span>Contender</span>
+        </span>
+      );
+    }
+  }
+
+  if (rank === 1) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black tracking-wide border shadow-md bg-gradient-to-r from-amber-500/25 via-yellow-500/25 to-amber-600/25 text-amber-300 border-amber-400/60 shadow-amber-950/40 ring-1 ring-amber-400/30">
+        <span className="text-sm leading-none" role="img" aria-label="1st place gold medal">🥇</span>
+        <span>1st Place</span>
+      </span>
+    );
+  }
+
+  if (rank === 2) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black tracking-wide border shadow-md bg-gradient-to-r from-slate-200/25 via-slate-100/25 to-slate-300/25 text-slate-100 border-slate-300/50 shadow-slate-950/40 ring-1 ring-slate-300/30">
+        <span className="text-sm leading-none" role="img" aria-label="2nd place silver medal">🥈</span>
+        <span>2nd Place</span>
+      </span>
+    );
+  }
+
+  if (rank === 3) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black tracking-wide border shadow-md bg-gradient-to-r from-amber-700/30 via-orange-800/25 to-amber-900/30 text-amber-300 border-amber-600/50 shadow-amber-950/40 ring-1 ring-amber-600/30">
+        <span className="text-sm leading-none" role="img" aria-label="3rd place bronze medal">🥉</span>
+        <span>3rd Place</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border bg-slate-900/80 text-slate-300 border-slate-800">
+      <span>Rank #{rank}</span>
+    </span>
+  );
+}
+
 export function PublicEventVoting({
   eventId,
   eventName,
@@ -52,6 +113,16 @@ export function PublicEventVoting({
   votingEndsAt,
   categories,
 }: Props) {
+  const router = useRouter();
+
+  // Local state for optimistic live vote updates
+  const [categoriesState, setCategoriesState] = React.useState<CategoryItem[]>(categories);
+
+  // Sync state whenever server revalidates props
+  React.useEffect(() => {
+    setCategoriesState(categories);
+  }, [categories]);
+
   // Selected category filter tab ("ALL" or category.id)
   const [selectedCategory, setSelectedCategory] = React.useState<string>("ALL");
 
@@ -75,39 +146,87 @@ export function PublicEventVoting({
   const [canScrollLeft, setCanScrollLeft] = React.useState(false);
   const [canScrollRight, setCanScrollRight] = React.useState(true);
 
-  const isLive = React.useMemo(() => {
-    if (!votingStartsAt || !votingEndsAt) {
-      return eventStatus === "LIVE";
-    }
-    return isVotingActive({
-      status: eventStatus,
-      votingStartsAt,
-      votingEndsAt,
-    });
-  }, [eventStatus, votingStartsAt, votingEndsAt]);
+  // Live wall-clock time updated every second to ensure instantaneous button state transitions
+  const [currentMs, setCurrentMs] = React.useState<number>(() => Date.now());
+
+  React.useEffect(() => {
+    setCurrentMs(Date.now());
+    const interval = setInterval(() => {
+      setCurrentMs(Date.now());
+    }, 1000);
+
+    const handlePhaseChange = () => {
+      setCurrentMs(Date.now());
+      router.refresh();
+    };
+
+    window.addEventListener("votely:voting-phase-change", handlePhaseChange);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("votely:voting-phase-change", handlePhaseChange);
+    };
+  }, [router]);
+
+  const startMs = React.useMemo(
+    () => (votingStartsAt ? new Date(votingStartsAt).getTime() : 0),
+    [votingStartsAt]
+  );
+  const endMs = React.useMemo(
+    () => (votingEndsAt ? new Date(votingEndsAt).getTime() : 0),
+    [votingEndsAt]
+  );
+
+  const isClosedStatus =
+    eventStatus === "CLOSED" ||
+    eventStatus === "FINALIZED" ||
+    eventStatus === "ARCHIVED" ||
+    eventStatus === "DRAFT";
 
   const isPastVotingEnd = React.useMemo(() => {
-    if (!votingEndsAt) return false;
-    return new Date().getTime() > new Date(votingEndsAt).getTime();
-  }, [votingEndsAt]);
+    if (!endMs) return false;
+    return currentMs > endMs;
+  }, [endMs, currentMs]);
+
+  const isLive = React.useMemo(() => {
+    if (isClosedStatus) return false;
+    if (endMs && currentMs > endMs) return false;
+
+    // Explicitly LIVE by organizer
+    if (eventStatus === "LIVE") return true;
+
+    // Scheduled opening automatically unlocked when window arrives
+    if (eventStatus === "SCHEDULED") {
+      return currentMs >= startMs && currentMs <= endMs;
+    }
+
+    return false;
+  }, [isClosedStatus, eventStatus, startMs, endMs, currentMs]);
 
   const disabledLabel = React.useMemo(() => {
-    if (
-      eventStatus === "CLOSED" ||
-      eventStatus === "FINALIZED" ||
-      eventStatus === "ARCHIVED" ||
-      isPastVotingEnd
-    ) {
+    if (isClosedStatus || isPastVotingEnd) {
       return "Voting Concluded";
     }
     return "Voting Not Open";
-  }, [eventStatus, isPastVotingEnd]);
+  }, [isClosedStatus, isPastVotingEnd]);
 
-  // Aggregate all nominees with category metadata for the "ALL" view
-  const allNomineesList = React.useMemo(() => {
+  // When isLive changes (voting automatically opens or closes), auto-refresh Next.js server state
+  const prevLiveRef = React.useRef<boolean | null>(null);
+  React.useEffect(() => {
+    if (prevLiveRef.current !== null && prevLiveRef.current !== isLive) {
+      router.refresh();
+    }
+    prevLiveRef.current = isLive;
+  }, [isLive, router]);
+
+  // 1. Process nominees sorted and ranked by votes for the "ALL" view
+  const allNomineesList = React.useMemo((): RankedNominee[] => {
     const list: (NomineeItem & { categoryId: string; categoryName: string })[] = [];
-    for (const cat of categories) {
+    let totalVotesAll = 0;
+
+    for (const cat of categoriesState) {
       for (const nom of cat.nominees) {
+        const vCount = nom.voteCount || 0;
+        totalVotesAll += vCount;
         list.push({
           ...nom,
           categoryId: cat.id,
@@ -115,54 +234,125 @@ export function PublicEventVoting({
         });
       }
     }
-    return list;
-  }, [categories]);
+
+    // Sort by voteCount descending, then displayOrder asc, then name asc
+    list.sort((a, b) => {
+      const vA = a.voteCount || 0;
+      const vB = b.voteCount || 0;
+      if (vB !== vA) return vB - vA;
+      if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
+      return a.name.localeCompare(b.name);
+    });
+
+    // Compute standard competition rank across all nominees
+    let currentRank = 1;
+    return list.map((nom, idx) => {
+      const vCount = nom.voteCount || 0;
+      if (idx > 0 && vCount < (list[idx - 1].voteCount || 0)) {
+        currentRank = idx + 1;
+      }
+      const percentage =
+        totalVotesAll > 0
+          ? Math.round((vCount / totalVotesAll) * 1000) / 10
+          : 0;
+
+      return {
+        ...nom,
+        rank: currentRank,
+        totalVotesInScope: totalVotesAll,
+        percentage,
+      };
+    });
+  }, [categoriesState]);
 
   // Total nominees count across event
   const totalNominees = allNomineesList.length;
 
-  // Currently displayed nominees based on selected category tab
-  const displayedNominees = React.useMemo(() => {
+  // 2. Process nominees sorted and ranked by votes for the chosen Category
+  const categoryNominees = React.useMemo((): RankedNominee[] => {
+    if (selectedCategory === "ALL") return [];
+    const targetCat = categoriesState.find((c) => c.id === selectedCategory);
+    if (!targetCat) return [];
+
+    const totalVotesInCat = targetCat.nominees.reduce(
+      (sum, n) => sum + (n.voteCount || 0),
+      0
+    );
+
+    // Sort by voteCount descending, then displayOrder asc, then name asc
+    const sorted = [...targetCat.nominees].sort((a, b) => {
+      const vA = a.voteCount || 0;
+      const vB = b.voteCount || 0;
+      if (vB !== vA) return vB - vA;
+      if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
+      return a.name.localeCompare(b.name);
+    });
+
+    // Compute standard competition rank within this category
+    let currentRank = 1;
+    return sorted.map((nom, idx) => {
+      const vCount = nom.voteCount || 0;
+      if (idx > 0 && vCount < (sorted[idx - 1].voteCount || 0)) {
+        currentRank = idx + 1;
+      }
+      const percentage =
+        totalVotesInCat > 0
+          ? Math.round((vCount / totalVotesInCat) * 1000) / 10
+          : 0;
+
+      return {
+        ...nom,
+        categoryId: targetCat.id,
+        categoryName: targetCat.name,
+        rank: currentRank,
+        totalVotesInScope: totalVotesInCat,
+        percentage,
+      };
+    });
+  }, [selectedCategory, categoriesState]);
+
+  // Currently displayed nominees based on selected category tab (always ranked!)
+  const displayedNominees: RankedNominee[] = React.useMemo(() => {
     if (selectedCategory === "ALL") {
       return allNomineesList;
     }
-    const targetCat = categories.find((c) => c.id === selectedCategory);
-    if (!targetCat) return [];
-    return targetCat.nominees.map((n) => ({
-      ...n,
-      categoryId: targetCat.id,
-      categoryName: targetCat.name,
-    }));
-  }, [selectedCategory, allNomineesList, categories]);
+    return categoryNominees;
+  }, [selectedCategory, allNomineesList, categoryNominees]);
 
   // Active Category info for title & description display
   const activeCategoryInfo = React.useMemo(() => {
     if (selectedCategory === "ALL") return null;
-    return categories.find((c) => c.id === selectedCategory) || null;
-  }, [selectedCategory, categories]);
+    return categoriesState.find((c) => c.id === selectedCategory) || null;
+  }, [selectedCategory, categoriesState]);
 
-  // Detect ?nominee=[id] in URL on mount and auto-open nominee detail modal
+  // Detect ?nominee=[id] in URL on mount and auto-open nominee detail modal with live standings
   React.useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const nomineeParam = params.get("nominee");
     if (!nomineeParam) return;
 
-    for (const cat of categories) {
+    for (const cat of categoriesState) {
       const match = cat.nominees.find((n) => n.id === nomineeParam);
       if (match) {
+        // Find ranked version from allNomineesList
+        const rankedMatch = allNomineesList.find((n) => n.id === nomineeParam);
         const timer = setTimeout(() => {
           setSelectedCategory(cat.id);
           setDetailNominee({
             ...match,
             categoryId: cat.id,
             categoryName: cat.name,
+            voteCount: match.voteCount ?? 0,
+            rank: rankedMatch?.rank,
+            percentage: rankedMatch?.percentage,
+            totalVotesInScope: rankedMatch?.totalVotesInScope,
           });
         }, 0);
         return () => clearTimeout(timer);
       }
     }
-  }, [categories]);
+  }, [categoriesState, allNomineesList]);
 
   // Check carousel scroll boundaries
   const updateScrollButtons = React.useCallback(() => {
@@ -223,7 +413,7 @@ export function PublicEventVoting({
     }
   };
 
-  const openNomineeDetail = (nom: NomineeItem & { categoryId: string; categoryName: string }) => {
+  const openNomineeDetail = (nom: RankedNominee) => {
     setDetailNominee({
       id: nom.id,
       name: nom.name,
@@ -232,6 +422,10 @@ export function PublicEventVoting({
       categoryId: nom.categoryId,
       categoryName: nom.categoryName,
       displayOrder: nom.displayOrder,
+      voteCount: nom.voteCount ?? 0,
+      rank: nom.rank,
+      percentage: nom.percentage,
+      totalVotesInScope: nom.totalVotesInScope,
     });
 
     if (typeof window !== "undefined") {
@@ -250,6 +444,19 @@ export function PublicEventVoting({
     }
   };
 
+  // Optimistic vote count update and trigger server re-fetch
+  const handleVoteSuccess = (nomineeId: string) => {
+    setCategoriesState((prev) =>
+      prev.map((cat) => ({
+        ...cat,
+        nominees: cat.nominees.map((n) =>
+          n.id === nomineeId ? { ...n, voteCount: (n.voteCount ?? 0) + 1 } : n
+        ),
+      }))
+    );
+    router.refresh();
+  };
+
   return (
     <div className="space-y-6">
       {/* ========================================================================= */}
@@ -264,7 +471,7 @@ export function PublicEventVoting({
             </h3>
           </div>
           <span className="text-xs text-slate-400">
-            {categories.length} Categor{categories.length === 1 ? "y" : "ies"} • {totalNominees} Nominee{totalNominees === 1 ? "" : "s"}
+            {categoriesState.length} Categor{categoriesState.length === 1 ? "y" : "ies"} • {totalNominees} Nominee{totalNominees === 1 ? "" : "s"}
           </span>
         </div>
 
@@ -293,7 +500,7 @@ export function PublicEventVoting({
           </button>
 
           {/* Individual Category Pill Buttons */}
-          {categories.map((cat) => {
+          {categoriesState.map((cat) => {
             const isSelected = selectedCategory === cat.id;
             return (
               <button
@@ -339,7 +546,7 @@ export function PublicEventVoting({
             )}
           </div>
           <span className="text-xs text-violet-300 font-medium shrink-0 flex items-center gap-1.5">
-            <span>Swipe or click arrows to explore nominees</span>
+            <span>Ranked by real verified votes • Swipe to explore</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </span>
         </div>
@@ -398,14 +605,26 @@ export function PublicEventVoting({
           >
             {displayedNominees.map((nom) => {
               const isCopied = copiedNomineeId === nom.id;
+              const vCount = nom.voteCount ?? 0;
+
+              // Distinguish card border styling for top leaders
+              const leaderBorder =
+                nom.rank === 1 && vCount > 0
+                  ? "border-amber-500/50 shadow-amber-950/20"
+                  : nom.rank === 2 && vCount > 0
+                  ? "border-slate-400/40 shadow-slate-950/20"
+                  : nom.rank === 3 && vCount > 0
+                  ? "border-amber-700/40 shadow-amber-950/15"
+                  : "border-slate-800/90";
+
               return (
                 <div
                   key={nom.id}
                   onClick={() => openNomineeDetail(nom)}
-                  className="w-[280px] sm:w-[320px] shrink-0 snap-start rounded-3xl border border-slate-800/90 bg-gradient-to-b from-[#0e162d] to-[#090d1c] p-5 flex flex-col justify-between hover:border-violet-500/50 hover:shadow-2xl hover:shadow-violet-950/30 transition-all duration-300 group cursor-pointer relative"
+                  className={`w-[280px] sm:w-[320px] shrink-0 snap-start rounded-3xl border ${leaderBorder} bg-gradient-to-b from-[#0e162d] to-[#090d1c] p-5 flex flex-col justify-between hover:border-violet-500/60 hover:shadow-2xl hover:shadow-violet-950/30 transition-all duration-300 group cursor-pointer relative`}
                 >
-                  {/* Top Header: Category Tag & Quick Share Action */}
-                  <div className="flex items-center justify-between gap-2 mb-3">
+                  {/* Row 1: Category Tag & Quick Share Action */}
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
                     <Badge
                       variant="glow"
                       className="text-[10px] px-2.5 py-0.5 truncate max-w-[190px]"
@@ -430,6 +649,17 @@ export function PublicEventVoting({
                         <Share2 className="h-3.5 w-3.5" />
                       )}
                     </button>
+                  </div>
+
+                  {/* Row 2: Prominent Rank Badge & Vote Count Badge */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    {renderRankBadge(nom.rank, vCount, nom.totalVotesInScope)}
+
+                    {/* Live Vote Voice Pill */}
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border border-violet-500/40 bg-gradient-to-r from-violet-950/80 to-indigo-950/80 text-violet-200 shadow-sm">
+                      <Flame className="h-3.5 w-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                      <span>{vCount} {vCount === 1 ? "Vote" : "Votes"}</span>
+                    </div>
                   </div>
 
                   {/* Nominee Portrait Image & Info */}
@@ -468,6 +698,35 @@ export function PublicEventVoting({
                           Official contender in this awards event.
                         </p>
                       )}
+                    </div>
+
+                    {/* Live Voice / Vote Share Progress Bar */}
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex justify-between items-center text-[11px] text-slate-400">
+                        <span className="flex items-center gap-1 font-medium text-slate-300">
+                          <Volume2 className="h-3 w-3 text-violet-400" />
+                          <span>Category Voice</span>
+                        </span>
+                        <span className="font-bold text-violet-300">
+                          {nom.percentage}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${
+                            nom.rank === 1 && vCount > 0
+                              ? "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500"
+                              : nom.rank === 2 && vCount > 0
+                              ? "bg-gradient-to-r from-slate-300 to-slate-100"
+                              : nom.rank === 3 && vCount > 0
+                              ? "bg-gradient-to-r from-amber-600 to-amber-500"
+                              : "bg-gradient-to-r from-violet-600 to-indigo-600"
+                          }`}
+                          style={{
+                            width: `${Math.max(nom.percentage, vCount > 0 ? 6 : 0)}%`,
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -552,6 +811,8 @@ export function PublicEventVoting({
           eventName={eventName}
           selectedNominee={votingNominee}
           onClose={() => setVotingNominee(null)}
+          onVoteSuccess={handleVoteSuccess}
+          isLive={isLive}
         />
       )}
     </div>

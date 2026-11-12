@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Sparkles,
   Award,
+  Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,10 @@ export interface NomineeDetailInfo {
   categoryName: string;
   categoryId: string;
   displayOrder?: number;
+  voteCount?: number;
+  rank?: number;
+  percentage?: number;
+  totalVotesInScope?: number;
 }
 
 interface NomineeDetailModalProps {
@@ -151,15 +156,46 @@ export function NomineeDetailModal({
             </div>
           )}
 
-          <div className="space-y-2 text-center sm:text-left flex-1 min-w-0">
+          <div className="space-y-2.5 text-center sm:text-left flex-1 min-w-0">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
               <Badge variant="glow" className="text-xs px-2.5 py-0.5">
                 <Trophy className="h-3 w-3 mr-1" />
                 {nominee.categoryName}
               </Badge>
-              <Badge variant="outline" className="text-xs px-2.5 py-0.5 text-slate-400">
-                Official Nominee
-              </Badge>
+
+              {/* Special Rank Badge */}
+              {nominee.rank === 1 && (
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black tracking-wide border shadow-md bg-gradient-to-r from-amber-500/25 via-yellow-500/25 to-amber-600/25 text-amber-300 border-amber-400/60 shadow-amber-950/40">
+                  <span className="text-sm">🥇</span>
+                  <span>1st Place</span>
+                </div>
+              )}
+              {nominee.rank === 2 && (
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black tracking-wide border shadow-md bg-gradient-to-r from-slate-200/25 via-slate-100/25 to-slate-300/25 text-slate-100 border-slate-300/50 shadow-slate-950/40">
+                  <span className="text-sm">🥈</span>
+                  <span>2nd Place</span>
+                </div>
+              )}
+              {nominee.rank === 3 && (
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black tracking-wide border shadow-md bg-gradient-to-r from-amber-700/30 via-orange-800/25 to-amber-900/30 text-amber-300 border-amber-600/50 shadow-amber-950/40">
+                  <span className="text-sm">🥉</span>
+                  <span>3rd Place</span>
+                </div>
+              )}
+              {nominee.rank && nominee.rank > 3 && (
+                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border bg-slate-900/80 text-slate-400 border-slate-800">
+                  <span>Rank #{nominee.rank}</span>
+                </div>
+              )}
+
+              {/* Live Vote Count Pill */}
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border border-violet-500/40 bg-violet-950/70 text-violet-200 shadow-sm">
+                <Flame className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                <span>{nominee.voteCount ?? 0} {(nominee.voteCount ?? 0) === 1 ? "Vote" : "Votes"}</span>
+                {nominee.percentage !== undefined && (
+                  <span className="text-violet-400 font-normal">({nominee.percentage}%)</span>
+                )}
+              </div>
             </div>
 
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">

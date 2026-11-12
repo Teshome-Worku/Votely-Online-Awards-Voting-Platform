@@ -54,7 +54,7 @@ export class ProductionSmsProvider implements SmsProvider {
       } = {
         from: identifierId,
         to: phoneNumber,
-        message: `Your Votely awards verification code is: ${otp}. Valid for 5 minutes. Do not share this code.`,
+        message: `Your Votely awards verification code is: ${otp}. Valid for 5 minutes. Do not share this code with anyone.`,
       };
 
       // Omit sender if empty or not provided

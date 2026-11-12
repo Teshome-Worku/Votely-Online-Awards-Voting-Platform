@@ -84,6 +84,11 @@ export default async function PublicEventPage({ params }: PageProps) {
       categories: {
         include: {
           nominees: {
+            include: {
+              _count: {
+                select: { votes: true },
+              },
+            },
             orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
           },
         },
@@ -117,6 +122,21 @@ export default async function PublicEventPage({ params }: PageProps) {
 
   const isOwnerPreview = dbEvent.status === "DRAFT";
   const totalNominees = dbEvent.categories.reduce((acc, cat) => acc + cat.nominees.length, 0);
+
+  // Map categories to include clean vote counts
+  const categoriesWithVotes = dbEvent.categories.map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    description: cat.description,
+    nominees: cat.nominees.map((nom) => ({
+      id: nom.id,
+      name: nom.name,
+      description: nom.description,
+      imageUrl: nom.imageUrl,
+      displayOrder: nom.displayOrder,
+      voteCount: nom._count?.votes ?? 0,
+    })),
+  }));
 
   return (
     <div className="min-h-screen flex flex-col bg-[#070a14] text-slate-100">
@@ -286,7 +306,7 @@ export default async function PublicEventPage({ params }: PageProps) {
                 eventStatus={dbEvent.status}
                 votingStartsAt={dbEvent.votingStartsAt.toISOString()}
                 votingEndsAt={dbEvent.votingEndsAt.toISOString()}
-                categories={dbEvent.categories}
+                categories={categoriesWithVotes}
               />
             )}
           </div>

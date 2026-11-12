@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Clock, CalendarCheck2, ShieldCheck, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { EventStatus } from "@prisma/client";
@@ -36,6 +37,8 @@ export function EventCountdownTimer({
   votingEndsAt,
   status,
 }: EventCountdownTimerProps) {
+  const router = useRouter();
+
   const startMs = React.useMemo(
     () => new Date(votingStartsAt).getTime(),
     [votingStartsAt]
@@ -47,6 +50,7 @@ export function EventCountdownTimer({
 
   const [mounted, setMounted] = React.useState(false);
   const [currentMs, setCurrentMs] = React.useState<number>(0);
+  const prevPhaseRef = React.useRef<"upcoming" | "live" | "expired" | null>(null);
 
   React.useEffect(() => {
     // Schedule state update after initial hydration to guarantee zero SSR hydration mismatch
@@ -87,6 +91,21 @@ export function EventCountdownTimer({
 
   const targetMs = isUpcoming ? startMs : endMs;
   const time = calculateRemaining(targetMs, currentMs);
+
+  // Automatically trigger system refresh and broadcast phase transition when voting starts or closes
+  React.useEffect(() => {
+    if (!mounted) return;
+    const currentPhase = isLive ? "live" : isUpcoming ? "upcoming" : "expired";
+    if (prevPhaseRef.current !== null && prevPhaseRef.current !== currentPhase) {
+      router.refresh();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("votely:voting-phase-change", { detail: { phase: currentPhase } })
+        );
+      }
+    }
+    prevPhaseRef.current = currentPhase;
+  }, [isLive, isUpcoming, isExpired, mounted, router]);
 
   return (
     <div

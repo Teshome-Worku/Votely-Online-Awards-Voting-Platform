@@ -29,9 +29,18 @@ interface Props {
   eventName: string;
   selectedNominee: NomineeInfo | null;
   onClose: () => void;
+  onVoteSuccess?: (nomineeId: string) => void;
+  isLive?: boolean;
 }
 
-export function VotingModal({ eventId, eventName, selectedNominee, onClose }: Props) {
+export function VotingModal({
+  eventId,
+  eventName,
+  selectedNominee,
+  onClose,
+  onVoteSuccess,
+  isLive = true,
+}: Props) {
   const [step, setStep] = React.useState<"phone" | "otp" | "confirmed">("phone");
   const [phoneNumber, setPhoneNumber] = React.useState("");
   const [challengeId, setChallengeId] = React.useState<string | null>(null);
@@ -114,6 +123,8 @@ export function VotingModal({ eventId, eventName, selectedNominee, onClose }: Pr
         isDuplicateRetry: voteRes.isDuplicateRetry,
       });
 
+      onVoteSuccess?.(selectedNominee.id);
+
       setStep("confirmed");
       setLoading(false);
     } catch {
@@ -161,12 +172,30 @@ export function VotingModal({ eventId, eventName, selectedNominee, onClose }: Pr
           </div>
         </div>
 
-        {error && (
-          <div className="rounded-xl border border-red-500/30 bg-red-950/20 p-3 text-xs text-red-300 flex items-start gap-2 mb-4">
-            <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
-            <span className="leading-relaxed">{error}</span>
+        {/* If voting closes while modal was open */}
+        {!isLive && step !== "confirmed" ? (
+          <div className="text-center py-6 space-y-4">
+            <div className="mx-auto h-12 w-12 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-400 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-white">Voting Has Concluded</h3>
+              <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+                The voting window for this awards event has closed. Ballot submissions are no longer accepted.
+              </p>
+            </div>
+            <Button onClick={onClose} variant="outline" className="w-full text-xs">
+              Close
+            </Button>
           </div>
-        )}
+        ) : (
+          <>
+            {error && (
+              <div className="rounded-xl border border-red-500/30 bg-red-950/20 p-3 text-xs text-red-300 flex items-start gap-2 mb-4">
+                <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{error}</span>
+              </div>
+            )}
 
         {/* Step 1: Phone Entry */}
         {step === "phone" && (
@@ -329,6 +358,8 @@ export function VotingModal({ eventId, eventName, selectedNominee, onClose }: Pr
               Done
             </Button>
           </div>
+        )}
+          </>
         )}
       </div>
     </div>
