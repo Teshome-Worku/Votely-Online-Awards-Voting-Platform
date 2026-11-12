@@ -69,18 +69,6 @@ export function EventCountdownTimer({
     };
   }, []);
 
-  // Server and pre-hydration client pass render identical placeholder
-  if (!mounted) {
-    return (
-      <div className="rounded-2xl border border-slate-800 bg-[#090e20]/60 p-5 animate-pulse flex items-center justify-center min-h-[120px]">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <Clock className="h-4 w-4 animate-spin text-violet-400" />
-          <span>Synchronizing voting timeline...</span>
-        </div>
-      </div>
-    );
-  }
-
   const isClosedStatus =
     status === "CLOSED" || status === "FINALIZED" || status === "ARCHIVED";
 
@@ -106,6 +94,18 @@ export function EventCountdownTimer({
     }
     prevPhaseRef.current = currentPhase;
   }, [isLive, isUpcoming, isExpired, mounted, router]);
+
+  // Server and pre-hydration client pass render identical placeholder
+  if (!mounted) {
+    return (
+      <div className="rounded-2xl border border-slate-800 bg-[#090e20]/60 p-5 animate-pulse flex items-center justify-center min-h-[120px]">
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <Clock className="h-4 w-4 animate-spin text-violet-400" />
+          <span>Synchronizing voting timeline...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
