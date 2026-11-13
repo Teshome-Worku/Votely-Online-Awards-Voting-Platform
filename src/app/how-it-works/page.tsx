@@ -46,7 +46,7 @@ export default function HowItWorksPage() {
                     For Awards Organizers
                   </h2>
                 </div>
-                <Link href="/auth/register">
+                <Link href="/register">
                   <Button variant="primaryGlow" size="sm">
                     Create Your Event
                   </Button>

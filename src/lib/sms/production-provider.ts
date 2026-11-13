@@ -94,7 +94,7 @@ export class ProductionSmsProvider implements SmsProvider {
       }
 
       // Handle non-success acknowledgement from AfroMessage
-      let errorMsg =
+      const errorMsg =
         (Array.isArray(data.response?.errors) && data.response.errors.length > 0
           ? data.response.errors.join(", ")
           : null) ||

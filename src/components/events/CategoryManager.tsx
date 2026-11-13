@@ -523,7 +523,7 @@ export function CategoryManager({ eventId, eventStatus, categories }: Props) {
                 {/* Nominees Cards */}
                 {cat.nominees.length === 0 ? (
                   <p className="text-xs text-slate-500 italic py-2">
-                    No nominees added yet. Click &quot;Add Nominee&quot; above to roster participants.
+                    No nominees added to this category yet. Click &quot;Add Nominee&quot; above to add contenders.
                   </p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">

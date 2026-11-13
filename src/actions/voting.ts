@@ -60,7 +60,22 @@ export async function requestOtpAction(
     return { success: false, error: "Voting is not currently active for this event." };
   }
 
-  return requestOtp(eventId, phoneNumber);
+  const res = await requestOtp(eventId, phoneNumber);
+  if (!res.success) {
+    const rawError = res.error || "";
+    let voterMessage = rawError;
+    if (
+      rawError.toLowerCase().includes("afromessage") ||
+      rawError.toLowerCase().includes("gateway") ||
+      rawError.toLowerCase().includes("rejected")
+    ) {
+      voterMessage =
+        "Unable to dispatch SMS verification code to this phone number. Please check the number format and try again.";
+    }
+    return { success: false, error: voterMessage };
+  }
+
+  return res;
 }
 
 /**

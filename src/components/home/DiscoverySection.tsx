@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Trophy, Calendar, Eye, Sparkles, Clock, ArrowRight } from "lucide-react";
+import { Search, Trophy, Calendar, Clock, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,19 +19,6 @@ export interface PublicEventItem {
   votingStartsAt: string | Date;
   votingEndsAt: string | Date;
 }
-
-// Prototype demonstration card (explicitly labeled as prototype mockup per PRS)
-const DEMO_EVENT = {
-  id: "demo-sample-01",
-  name: "Ethiopian Creative Arts & Music Awards 2026",
-  slug: "ethiopian-creative-arts-2026",
-  description:
-    "Celebrating outstanding achievements across Ethiopian music, digital media, cinema, and cultural arts. Verified public voting powered by Votely OTP.",
-  organizerName: "Addis Creative Guild",
-  status: "LIVE" as const,
-  votingEndsAt: "Nov 30, 2026",
-  isDemonstration: true,
-};
 
 function getPublicStatusBadge(status: string) {
   switch (status) {
@@ -60,7 +47,6 @@ export function DiscoverySection({
 }) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedStatus, setSelectedStatus] = React.useState<string>("all");
-  const [showDemoPreview, setShowDemoPreview] = React.useState(false);
 
   // Filter published events
   const filteredEvents = publishedEvents.filter((event) => {
@@ -186,9 +172,9 @@ export function DiscoverySection({
               </div>
             ))}
           </div>
-        ) : !showDemoPreview ? (
-          /* Graceful Empty State */
-          <div className="rounded-2xl border border-dashed border-slate-800 bg-[#0a0e1e]/60 p-12 text-center max-w-2xl mx-auto space-y-4">
+        ) : (
+          /* Clean Production Empty State */
+          <div className="rounded-3xl border border-dashed border-slate-800 bg-[#0a0e1e]/60 p-12 text-center max-w-2xl mx-auto space-y-4">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-950/50 border border-violet-500/20 text-violet-400">
               <Trophy className="h-7 w-7" />
             </div>
@@ -197,82 +183,22 @@ export function DiscoverySection({
                 No Public Awards Live at This Moment
               </h3>
               <p className="text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
-                Once organizers publish their awards ceremonies, they are indexed here for public discovery and voting.
+                Once organizers publish their competitions, they are indexed here for public discovery and verified voting.
               </p>
             </div>
 
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link href="/register">
-                <Button variant="primaryGlow" size="sm">
-                  Create an awards event
+                <Button variant="primaryGlow" size="sm" className="flex items-center gap-2">
+                  <span>Create an awards event</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </Link>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDemoPreview(true)}
-                className="flex items-center gap-1.5"
-              >
-                <Eye className="h-4 w-4" />
-                <span>Preview Sample Award Card</span>
-              </Button>
-            </div>
-          </div>
-        ) : (
-          /* Prototype Demonstration Preview */
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-violet-950/30 border border-violet-500/30 text-xs text-violet-300">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-violet-400" />
-                <span>
-                  <strong>Prototype Demonstration Card:</strong> This is a labeled design template showcasing how published awards appear on Votely.
-                </span>
-              </div>
-              <button
-                onClick={() => setShowDemoPreview(false)}
-                className="underline hover:text-white cursor-pointer ml-4 shrink-0"
-              >
-                Dismiss Preview
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="rounded-2xl border border-violet-500/30 bg-[#0d142b] p-6 flex flex-col justify-between hover:border-violet-400/60 transition-all shadow-lg shadow-violet-950/30">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <Badge variant="live" className="flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>Live Voting</span>
-                    </Badge>
-                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-violet-900/60 text-violet-300 border border-violet-500/30">
-                      Design Sample
-                    </span>
-                  </div>
-
-                  <h3 className="text-xl font-bold text-white mb-2 leading-snug">
-                    {DEMO_EVENT.name}
-                  </h3>
-                  <p className="text-xs text-violet-300/80 mb-3 font-medium">
-                    Organized by: {DEMO_EVENT.organizerName}
-                  </p>
-                  <p className="text-sm text-slate-400 leading-relaxed line-clamp-3 mb-6">
-                    {DEMO_EVENT.description}
-                  </p>
-                </div>
-
-                <div className="pt-4 border-t border-slate-800 space-y-4">
-                  <div className="text-xs text-slate-400 flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5 text-violet-400" />
-                    <span>Closes: {DEMO_EVENT.votingEndsAt}</span>
-                  </div>
-
-                  <Link href={`/events/${DEMO_EVENT.slug}`} className="w-full">
-                    <Button variant="outline" size="sm" className="w-full justify-center">
-                      View Event Page
-                    </Button>
-                  </Link>
-                </div>
-              </div>
+              <Link href="/how-it-works">
+                <Button variant="outline" size="sm">
+                  <span>Learn how it works</span>
+                </Button>
+              </Link>
             </div>
           </div>
         )}

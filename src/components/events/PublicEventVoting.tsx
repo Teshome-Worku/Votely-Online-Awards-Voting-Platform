@@ -19,7 +19,6 @@ import {
   Volume2,
 } from "lucide-react";
 import type { EventStatus } from "@prisma/client";
-import { isVotingActive } from "@/lib/event-lifecycle";
 
 export interface NomineeItem {
   id: string;
@@ -105,13 +104,14 @@ export function PublicEventVoting({
 }: Props) {
   const router = useRouter();
 
-  // Local state for optimistic live vote updates
+  // Local state for optimistic live vote updates with render-time prop synchronization
+  const [prevCategories, setPrevCategories] = React.useState(categories);
   const [categoriesState, setCategoriesState] = React.useState<CategoryItem[]>(categories);
 
-  // Sync state whenever server revalidates props
-  React.useEffect(() => {
+  if (categories !== prevCategories) {
+    setPrevCategories(categories);
     setCategoriesState(categories);
-  }, [categories]);
+  }
 
   // Selected category filter tab ("ALL" or category.id)
   const [selectedCategory, setSelectedCategory] = React.useState<string>("ALL");
@@ -140,7 +140,6 @@ export function PublicEventVoting({
   const [currentMs, setCurrentMs] = React.useState<number>(() => Date.now());
 
   React.useEffect(() => {
-    setCurrentMs(Date.now());
     const interval = setInterval(() => {
       setCurrentMs(Date.now());
     }, 1000);

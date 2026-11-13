@@ -15,7 +15,7 @@ export function Hero() {
           {/* Top Pill / Badge */}
           <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-950/40 px-3.5 py-1.5 text-xs font-medium text-violet-300 backdrop-blur-md shadow-sm shadow-violet-900/40">
             <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-            <span>Ethiopian & Global Awards Platform • Version 1.0</span>
+            <span>Verified Online Awards Platform • Transparent & Tamper-Proof</span>
           </div>
 
           {/* Main Title */}

@@ -8,7 +8,6 @@ import {
   AlertCircle,
   Flame,
   Layers,
-  Sparkles,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { EventResultsData, CategoryResult, NomineeResult } from "@/lib/results";
@@ -189,10 +188,14 @@ function CategoryResultsCard({
         </div>
       )}
 
-      {category.winnerStatus === "NO_VOTES_CAST" && category.nominees.length === 0 && (
+      {category.winnerStatus === "NO_VOTES_CAST" && (
         <div className="bg-slate-900/50 border-b border-slate-800 px-6 py-3 flex items-center gap-2.5 text-xs text-slate-400">
           <AlertCircle className="h-4 w-4 text-slate-400 shrink-0" />
-          <span>No nominees or accepted votes were registered for this category.</span>
+          <span>
+            {category.nominees.length === 0
+              ? "No nominees or accepted votes were registered for this category."
+              : "No accepted votes were submitted for this category. Nominees are listed in roster order."}
+          </span>
         </div>
       )}
 
